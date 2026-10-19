@@ -1,0 +1,15 @@
+{
+  "name": "hiuhf0 · Học từ vựng tiếng Anh",
+  "short_name": "hiuhf0",
+  "description": "Học từ vựng tiếng Anh A1 đến B1 bằng flashcard, lặp lại ngắt quãng, phiên âm IPA và shadowing.",
+  "start_url": "./index.html#learn",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef1f5",
+  "theme_color": "#eef1f5",
+  "lang": "vi",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

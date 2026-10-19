@@ -428,3 +428,26 @@ mark { background: color-mix(in srgb, var(--pink) 28%, transparent); color: inhe
 .s-counts .s-meta { margin-left: auto; font-weight: 700; color: var(--ink); }
 .prompt .btn { margin: 0 4px; }
 .block { display: block; width: 100%; }
+
+/* ---- Phiên âm IPA ---- */
+.ipa { font-family: "Charis SIL", "Doulos SIL", "Noto Sans", "Segoe UI", "Lucida Sans Unicode", system-ui, sans-serif; font-size: .9em; color: var(--brand); margin: 0 6px; letter-spacing: .01em; }
+.fc-ipa { margin-top: 2px; font-size: 1.15rem; }
+.prompt > .ipa { display: block; text-align: center; margin: 2px 0 6px; font-size: 1.05rem; }
+.wrow-main .ipa { font-size: .85em; }
+.i-word .ipa { font-size: 1rem; }
+
+/* ---- Mục tiêu ngày & từ khó ---- */
+.goal { display: grid; gap: 6px; min-width: 190px; max-width: 260px; }
+.goal-h { display: flex; justify-content: space-between; gap: 10px; font-size: .85rem; color: var(--muted); }
+.goal-h b { color: var(--ink); }
+.hardlist { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.hardw { padding: 4px 10px; border-radius: 999px; background: var(--pink-soft); color: var(--ink); font-weight: 600; }
+.hardw small { color: var(--brand); font-weight: 400; }
+
+/* ---- Trang Phát âm ---- */
+.pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.pair { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.pair-w { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+.pair-w .ipa { margin: 0 4px; }
+#pquiz .options { margin: 12px 0; }
+#pquiz .result { margin: 10px 0; }

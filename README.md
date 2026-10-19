@@ -9,6 +9,11 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 - **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Làm sai thì từ xuống cấp và quay lại sớm, khoảng cách giảm một nửa.
 - **1.594 từ vựng** chia theo cấp độ A1 (602 từ), A2 (518 từ), B1 (474 từ) và 20 chủ đề. Mỗi từ có loại từ, nghĩa tiếng Việt, định nghĩa Anh–Anh và câu ví dụ.
 - **Thư viện từ**: tìm theo tiếng Anh hoặc tiếng Việt, lọc theo cấp độ CEFR, chủ đề, cấp thuộc; ưu tiên học một từ hoặc đánh dấu "đã nhớ rõ".
+- **Phiên âm IPA (Anh–Mỹ)** cho cả 1.594 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
+- **Phát âm**: 13 nhóm cặp âm dễ nhầm (ship/sheep, light/right, think/sink…) kèm IPA, nghe từng từ và bài **Luyện tai** (nghe rồi chọn từ đúng).
+- **Từ khó**: tự gom những từ bạn từng quên, luyện riêng 20 từ mỗi lượt; có bộ lọc “Từ khó” và lọc theo loại từ trong thư viện.
+- **Mục tiêu hôm nay** hiện ngay ở trang chính.
+- **Dùng offline / cài như ứng dụng (PWA)** khi mở qua https (GitHub Pages).
 - **Shadowing**: 12 bài (hội thoại và đoạn văn). Nghe câu mẫu, ghi âm giọng bạn, nghe lại để so sánh, chế độ tự động "nghe rồi nhại", chấm điểm phát âm tham khảo (Chrome, Edge).
 - **Dịch bài**: bấm vào từ để tra nghĩa, hiện bản dịch từng câu, hoặc tự dịch rồi đối chiếu. Bản nháp được lưu.
 - Chế độ sáng/tối, phím tắt (Space để lật, 1 để Tiếp tục, 2 để Đã nhớ rõ từ, 1 đến 4 chọn đáp án, P để nghe), xuất/nhập file sao lưu tiến độ.
@@ -39,10 +44,13 @@ js/
   srs.js       thuật toán lặp lại ngắt quãng
   store.js     lưu tiến độ vào localStorage, xuất/nhập JSON
   tts.js       đọc to bằng Web Speech API
+  (sw.js, manifest.webmanifest, icons/ ở thư mục gốc: PWA dùng offline)
   data.js      đọc và lập chỉ mục dữ liệu từ vựng
   data/
     vocab-a1-1.js … vocab-b1-2.js   từ vựng
     texts.js                         bài shadowing / dịch bài
+    ipa.js                           phiên âm IPA từng từ (từ|IPA)
+    pairs.js                         cặp âm dễ nhầm
 ```
 
 ## Thêm từ vựng

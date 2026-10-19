@@ -40,9 +40,12 @@
   const highlight = (ex, word) => esc(markWord(ex, word, (m) => '\u0001' + m + '\u0002')).replace(/\u0001/g, '<mark>').replace(/\u0002/g, '</mark>');
   const cloze = (ex, word) => esc(markWord(ex, word, () => '_____'));
 
+  const ipaHTML = (w) => (w && w.ipa && Store.settings.showIpa !== false ? `<span class="ipa" title="Phiên âm IPA (Anh–Mỹ)">/${esc(w.ipa)}/</span>` : '');
+  const isHard = (w) => { const c = Store.card(w.id); return !!c && (c.lapses || 0) >= 1 && SRS.level(c) < 5; };
+
   function infoHTML(w, showWord = true) {
     return `<div class="info">
-      ${showWord ? `<div class="i-word"><span>${esc(w.word)}</span><span class="pos">${esc(w.pos)}</span><button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm từ ${esc(w.word)}">🔊</button></div>` : ''}
+      ${showWord ? `<div class="i-word"><span>${esc(w.word)}</span><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm từ ${esc(w.word)}">🔊</button></div>` : ''}
       <div class="i-vi">${esc(w.vi)}</div>
       <div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div>
       <div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div>
@@ -79,7 +82,7 @@
   }
 
   /* ================= Định tuyến ================= */
-  const routes = { learn: renderLearn, library: renderLibrary, shadow: renderShadow, read: renderRead, settings: renderSettings };
+  const routes = { learn: renderLearn, library: renderLibrary, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
   let currentRoute = 'learn';
   let S = null; // phiên học
 
@@ -139,6 +142,11 @@
     const total = Data.words.length;
     const streak = Store.streak();
     const lstats = levelStats();
+    const hardList = Data.words.filter(isHard);
+    const goal = Math.max(1, set.newPerDay);
+    const goalPct = Math.min(100, Math.round((daily.newDone / goal) * 100));
+    const hardTop = hardList.slice().sort((a, b) => cards[b.id].lapses - cards[a.id].lapses).slice(0, 6)
+      .map((w) => `<span class="hardw">${esc(w.word)}${w.ipa ? ` <small>/${esc(w.ipa)}/</small>` : ''}</span>`).join('');
 
     const title = due ? `${due} thẻ cần ôn ngay` : newLeft ? 'Chưa có thẻ cần ôn, học từ mới nhé' : 'Hôm nay bạn đã học xong';
     const mrows = counts.map((n, lv) => `<div class="mrow">
@@ -174,6 +182,7 @@
             <button class="btn ghost" id="more" ${fresh - newLeft > 0 ? '' : 'disabled'}>Học thêm 10 từ mới</button>
           </div>
         </div>
+        <div class="goal" aria-label="Mục tiêu hôm nay"><div class="goal-h"><span>Mục tiêu hôm nay</span><b>${Math.min(daily.newDone, goal)}/${goal} từ mới</b></div><div class="progress sm"><i style="width:${goalPct}%"></i></div><small class="muted">${daily.reviewDone} lượt ôn hôm nay${goalPct >= 100 ? '. Bạn đã đạt mục tiêu!' : ''}</small></div>
         <div class="streak" aria-label="Chuỗi ngày học liên tiếp"><b>${streak}</b><span>ngày liên tiếp</span></div>
       </section>
 
@@ -182,6 +191,11 @@
         <div class="stat"><b>${counts[1] + counts[2] + counts[3] + counts[4]}</b><span>đang học (cấp 1 đến 4)</span></div>
         <div class="stat"><b>${counts[0]}</b><span>chưa học</span></div>
         <div class="stat"><b>${total}</b><span>từ trong kho</span></div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2>Từ khó</h2><span class="muted">${hardList.length} từ hay sai</span></div>
+        ${hardList.length ? `<p class="hint">Những từ bạn từng quên hoặc làm sai và chưa lên cấp 5. Luyện riêng để khắc phục.</p><div class="hardlist">${hardTop}</div><div class="row wrap"><button class="btn primary" id="hard">Luyện từ khó · ${Math.min(20, hardList.length)} từ</button></div>` : '<p class="muted">Chưa có từ khó nào. Những từ bạn làm sai sẽ được gom lại ở đây.</p>'}
       </section>
 
       <section class="card">
@@ -206,6 +220,7 @@
       if (t.id === 'review') return startSession('review', 0);
       if (t.id === 'learnnew') return startSession('new', 0);
       if (t.id === 'more') return startSession('new', 10);
+      if (t.id === 'hard') return startSession('hard', 0);
     };
   }
 
@@ -227,6 +242,11 @@
       }
     });
     dueReview.sort((a, b) => cards[a.id].due - cards[b.id].due);
+
+    if (kind === 'hard') {
+      const hard = Data.words.filter(isHard).sort((a, b) => (cards[b.id].lapses - cards[a.id].lapses) || (cards[a.id].due - cards[b.id].due));
+      return { ids: hard.slice(0, 20).map((w) => w.id), early: false };
+    }
 
     if (kind === 'review') {
       const reviews = dueReview.slice(0, Math.max(0, set.reviewsPerDay - daily.reviewDone));
@@ -340,7 +360,7 @@
 
   function stageFlip() {
     const { w, flipped } = S.cur;
-    const frontHTML = `<div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos)}</div><button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button>`;
+    const frontHTML = `<div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos)}</div>${ipaHTML(w) ? `<div class="fc-ipa">${ipaHTML(w)}</div>` : ''}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button>`;
     const backHTML = `<div class="fc-vi">${esc(w.vi)}</div>
       <div class="fc-more"><div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div><div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div></div>`;
     $('#stage').innerHTML = `<div class="fc ${flipped ? 'flipped' : ''}" id="fc" role="button" tabindex="0" aria-label="Lật thẻ">
@@ -375,7 +395,7 @@
     if (cur.dir === 'listen') {
       q = `<div class="prompt"><button class="btn lg" data-say="${esc(w.word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(w.word)}" data-rate="0.55">🐢 Nghe chậm</button></div><p class="muted center">Nghe và chọn nghĩa đúng</p>`;
     } else if (cur.dir === 'en2vi') {
-      q = `<div class="prompt"><div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos)}</div><button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div><p class="muted center">Chọn nghĩa đúng</p>`;
+      q = `<div class="prompt"><div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos)}</div>${ipaHTML(w)}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div><p class="muted center">Chọn nghĩa đúng</p>`;
     } else {
       q = `<div class="prompt"><div class="fc-vi">${esc(w.vi)}</div><div class="fc-pos">${esc(w.pos)}</div></div><p class="muted center">Chọn từ tiếng Anh đúng</p>`;
     }
@@ -528,7 +548,8 @@
   });
 
   /* ================= TỪ VỰNG (thư viện) ================= */
-  const lib = { level: 'all', topic: 'all', mv: 'all', q: '', limit: 120 };
+  const lib = { level: 'all', topic: 'all', mv: 'all', pos: 'all', q: '', limit: 120 };
+  const POS_NAMES = { n: 'Danh từ', v: 'Động từ', adj: 'Tính từ', adv: 'Trạng từ' };
 
   function libFiltered() {
     const raw = lib.q.trim().toLowerCase();
@@ -537,7 +558,8 @@
     return Data.words.filter((w) => {
       if (lib.level !== 'all' && w.level !== lib.level) return false;
       if (lib.topic !== 'all' && w.topic !== lib.topic) return false;
-      if (lib.mv !== 'all' && String(SRS.level(Store.get().cards[w.id] || null)) !== lib.mv) return false;
+      if (lib.pos !== 'all' && w.pos !== lib.pos) return false;
+      if (lib.mv === 'hard') { if (!isHard(w)) return false; } else if (lib.mv !== 'all' && String(SRS.level(Store.get().cards[w.id] || null)) !== lib.mv) return false;
       if (q) {
         if (accented) return w.vi.toLowerCase().indexOf(raw) >= 0;
         if (!w._k) w._k = fold(w.word + ' ' + w.vi);
@@ -552,7 +574,7 @@
     const t = topicOf(w.topic);
     return `<article class="wrow ${open ? 'open' : ''}" data-id="${esc(w.id)}">
       <div class="wrow-head" role="button" tabindex="0" aria-expanded="${!!open}">
-        <div class="wrow-main"><b>${esc(w.word)}</b><span class="pos">${esc(w.pos)}</span><span class="vi">${esc(w.vi)}</span></div>
+        <div class="wrow-main"><b>${esc(w.word)}</b><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<span class="vi">${esc(w.vi)}</span></div>
         <div class="wrow-meta">${lvBadge(w.level)}${mvBadge(SRS.level(Store.get().cards[w.id] || null))}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div>
       </div>
       <div class="wrow-body">
@@ -579,13 +601,15 @@
     const lvOpts = [`<button class="chip" data-lv="all" aria-pressed="${lib.level === 'all'}">Tất cả</button>`]
       .concat(Data.LEVELS.map((l) => `<button class="chip" data-lv="${l.key}" aria-pressed="${lib.level === l.key}">${esc(l.name)}</button>`)).join('');
     const tpOpts = ['<option value="all">Mọi chủ đề</option>'].concat(Data.TOPICS.map((t) => `<option value="${t.key}" ${lib.topic === t.key ? 'selected' : ''}>${t.icon} ${esc(t.vi)}</option>`)).join('');
-    const stOpts = [['all', 'Mọi cấp thuộc']].concat(SRS.LEVEL_NAMES.map((n, i) => [String(i), 'Cấp ' + i + ' · ' + n])).map(([k, v]) => `<option value="${k}" ${lib.mv === k ? 'selected' : ''}>${v}</option>`).join('');
+    const stOpts = [['all', 'Mọi cấp thuộc'], ['hard', 'Từ khó (hay sai)']].concat(SRS.LEVEL_NAMES.map((n, i) => [String(i), 'Cấp ' + i + ' · ' + n])).map(([k, v]) => `<option value="${k}" ${lib.mv === k ? 'selected' : ''}>${v}</option>`).join('');
+    const posKeys = Array.from(new Set(Data.words.map((w) => w.pos))).sort();
+    const posOpts = ['<option value="all">Mọi loại từ</option>'].concat(posKeys.map((p) => `<option value="${esc(p)}" ${lib.pos === p ? 'selected' : ''}>${esc(POS_NAMES[p] || p)} (${esc(p)})</option>`)).join('');
     view.innerHTML = `
       <section class="page-h"><h1>Từ vựng</h1><p class="muted">${Data.words.length} từ, mỗi từ có nghĩa tiếng Việt, định nghĩa Anh–Anh và câu ví dụ.</p></section>
       <section class="card filters">
         <input id="q" class="input" type="search" placeholder="Tìm từ tiếng Anh hoặc nghĩa tiếng Việt…" value="${esc(lib.q)}" aria-label="Tìm từ">
         <div class="chips" id="f-level">${lvOpts}</div>
-        <div class="row wrap"><select id="f-topic" class="input" aria-label="Chủ đề">${tpOpts}</select><select id="f-status" class="input" aria-label="Trạng thái">${stOpts}</select></div>
+        <div class="row wrap"><select id="f-topic" class="input" aria-label="Chủ đề">${tpOpts}</select><select id="f-status" class="input" aria-label="Trạng thái">${stOpts}</select><select id="f-pos" class="input" aria-label="Loại từ">${posOpts}</select></div>
       </section>
       <p class="muted" id="lib-count"></p>
       <div id="lib-list" class="wlist"></div>
@@ -595,6 +619,7 @@
     view.oninput = (e) => { if (e.target.id === 'q') { lib.q = e.target.value; lib.limit = 120; updateLib(); } };
     view.onchange = (e) => {
       if (e.target.id === 'f-topic') { lib.topic = e.target.value; lib.limit = 120; updateLib(); }
+      if (e.target.id === 'f-pos') { lib.pos = e.target.value; lib.limit = 120; updateLib(); }
       if (e.target.id === 'f-status') { lib.mv = e.target.value; lib.limit = 120; updateLib(); }
     };
     view.onclick = (e) => {
@@ -624,6 +649,88 @@
       if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('wrow-head')) { e.preventDefault(); e.target.click(); }
     };
   }
+
+  /* ================= PHÁT ÂM: cặp âm dễ nhầm ================= */
+  let sq = { group: 'all', cur: null, picked: null, score: 0, total: 0, streak: 0 };
+
+  function sqNext() {
+    const groups = sq.group === 'all' ? Data.pairs : [Data.pairs[+sq.group]].filter(Boolean);
+    const all = [];
+    groups.forEach((g) => g.pairs.forEach((p) => all.push({ g, p })));
+    if (!all.length) { sq.cur = null; return; }
+    const pick = all[Math.floor(Math.random() * all.length)];
+    sq.cur = { sound: pick.g.sound, p: pick.p, target: Math.random() < 0.5 ? 0 : 1 };
+    sq.picked = null;
+  }
+
+  function drawQuiz() {
+    const box = $('#pquiz');
+    if (!box) return;
+    const c = sq.cur;
+    if (!c) {
+      box.innerHTML = `<p class="muted">Máy sẽ đọc ngẫu nhiên một trong hai từ của một cặp âm. Bạn nghe và chọn đúng từ đó.</p>
+        <button class="btn primary lg" data-q="start">Bắt đầu luyện tai</button>${sq.total ? `<p class="muted">Lần trước: ${sq.score}/${sq.total} câu đúng</p>` : ''}`;
+      return;
+    }
+    const word = c.p[c.target * 2];
+    const opts = [0, 1].map((i) => {
+      let cls = 'opt';
+      if (sq.picked != null) cls += i === c.target ? ' correct' : (sq.picked === i ? ' wrong' : ' dim');
+      return `<button class="${cls}" data-q="pick" data-i="${i}" ${sq.picked != null ? 'disabled' : ''}><kbd>${i + 1}</kbd><span>${esc(c.p[i * 2])}${sq.picked != null ? ` <span class="ipa">/${esc(c.p[i * 2 + 1])}/</span>` : ''}</span></button>`;
+    }).join('');
+    const done = sq.picked != null;
+    box.innerHTML = `<div class="row between wrap"><span class="muted">Cặp âm: <b>${esc(c.sound)}</b></span><span class="muted">Điểm ${sq.score}/${sq.total} · chuỗi đúng ${sq.streak}</span></div>
+      <div class="prompt"><button class="btn lg" data-say="${esc(word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(word)}" data-rate="0.55">🐢 Nghe chậm</button></div>
+      <p class="muted center">Bạn nghe thấy từ nào?</p>
+      <div class="options">${opts}</div>
+      ${done ? `<div class="result ${sq.picked === c.target ? 'ok' : 'bad'}">${sq.picked === c.target ? 'Chính xác' : 'Chưa đúng'}: <b>${esc(word)}</b> <span class="ipa">/${esc(c.p[c.target * 2 + 1])}/</span></div><button class="btn primary lg block" data-q="next">Câu tiếp theo <kbd>Space</kbd></button>` : ''}`;
+  }
+
+  function renderSound() {
+    sq.cur = null; sq.picked = null;
+    const gOpts = ['<option value="all">Tất cả cặp âm</option>'].concat(Data.pairs.map((g, i) => `<option value="${i}" ${String(sq.group) === String(i) ? 'selected' : ''}>${esc(g.sound)}</option>`)).join('');
+    const groups = Data.pairs.map((g) => `<section class="card">
+        <div class="card-h"><h2>${esc(g.sound)}</h2></div>
+        <p class="hint">${esc(g.tip)}</p>
+        <div class="pairs">${g.pairs.map((p) => `<div class="pair">
+          <div class="pair-w"><b>${esc(p[0])}</b><span class="ipa">/${esc(p[1])}/</span><button class="icon-btn sm" data-say="${esc(p[0])}" aria-label="Nghe ${esc(p[0])}">🔊</button></div>
+          <span class="muted">vs</span>
+          <div class="pair-w"><b>${esc(p[2])}</b><span class="ipa">/${esc(p[3])}/</span><button class="icon-btn sm" data-say="${esc(p[2])}" aria-label="Nghe ${esc(p[2])}">🔊</button></div>
+        </div>`).join('')}</div></section>`).join('');
+    view.innerHTML = `
+      <section class="page-h"><h1>Phát âm</h1><p class="muted">Luyện phân biệt các cặp âm dễ nhầm với người Việt. Phiên âm theo IPA Anh–Mỹ. Giọng đọc do trình duyệt tạo ra, nên hãy nghe thêm nguồn khác nếu thấy khó phân biệt.</p></section>
+      <section class="card">
+        <div class="card-h"><h2>Luyện tai</h2><select id="pq-group" class="input" aria-label="Chọn cặp âm">${gOpts}</select></div>
+        <div id="pquiz"></div>
+      </section>
+      ${groups || '<div class="empty card">Chưa có dữ liệu cặp âm.</div>'}`;
+    drawQuiz();
+    view.onchange = (e) => { if (e.target.id === 'pq-group') { sq.group = e.target.value; sq.cur = null; sq.picked = null; drawQuiz(); } };
+    view.onclick = (e) => {
+      const b = e.target.closest('button[data-q]');
+      if (!b || b.disabled) return;
+      const q = b.dataset.q;
+      if (q === 'start' || q === 'next') { sqNext(); drawQuiz(); if (sq.cur) TTS.speak(sq.cur.p[sq.cur.target * 2]); return; }
+      if (q === 'pick' && sq.cur && sq.picked == null) {
+        sq.picked = +b.dataset.i;
+        sq.total += 1;
+        if (sq.picked === sq.cur.target) { sq.score += 1; sq.streak += 1; } else sq.streak = 0;
+        drawQuiz();
+      }
+    };
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (currentRoute !== 'sound' || !sq.cur) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    let b = null;
+    if ((e.key === '1' || e.key === '2') && sq.picked == null) b = $(`#pquiz [data-q="pick"][data-i="${+e.key - 1}"]`);
+    else if ((e.key === ' ' || e.key === 'Enter') && sq.picked != null && tag !== 'button') b = $('#pquiz [data-q="next"]');
+    else if (e.key === 'p' || e.key === 'P') { TTS.speak(sq.cur.p[sq.cur.target * 2]); return; }
+    if (b) { e.preventDefault(); b.click(); }
+  });
 
   /* ================= Danh sách bài (Shadowing / Dịch bài) ================= */
   let textLevel = 'all';
@@ -958,7 +1065,7 @@
     rd = { text: t, mode: 'read', showAll: false };
     const ts = Store.textState(t.id);
     const vocab = textVocab(t).filter((w) => w.level !== 'A1' || t.level === 'A1').slice(0, 30);
-    const vocabHTML = vocab.map((w) => `<div class="vrow"><b>${esc(w.word)}</b><span class="pos">${esc(w.pos)}</span><span class="vi">${esc(w.vi)}</span>${lvBadge(w.level)}<button class="icon-btn sm" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div>`).join('');
+    const vocabHTML = vocab.map((w) => `<div class="vrow"><b>${esc(w.word)}</b><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<span class="vi">${esc(w.vi)}</span>${lvBadge(w.level)}<button class="icon-btn sm" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div>`).join('');
     view.innerHTML = `
       <a class="back" href="#read">‹ Danh sách bài</a>
       <section class="card">
@@ -1082,6 +1189,7 @@
         <h2>Học tập</h2>
         <label class="field"><span>Số từ mới mỗi ngày</span><input class="input" type="number" min="1" max="100" id="s-new" value="${s.newPerDay}"></label>
         <label class="field"><span>Số thẻ ôn tối đa mỗi ngày</span><input class="input" type="number" min="10" max="1000" id="s-rev" value="${s.reviewsPerDay}"></label>
+        <label class="field row"><input type="checkbox" id="s-ipa" ${s.showIpa !== false ? 'checked' : ''}><span>Hiện phiên âm IPA (Anh–Mỹ) trên thẻ và trong thư viện</span></label>
         <label class="field row"><input type="checkbox" id="s-auto" ${s.autoSpeak ? 'checked' : ''}><span>Tự động đọc từ khi hiện thẻ</span></label>
       </section>
       <section class="card form">
@@ -1116,6 +1224,7 @@
       if (id === 's-new') s.newPerDay = num(e.target.value, 1, 100, 10);
       else if (id === 's-rev') s.reviewsPerDay = num(e.target.value, 10, 1000, 200);
       else if (id === 's-auto') s.autoSpeak = e.target.checked;
+      else if (id === 's-ipa') s.showIpa = e.target.checked;
       else if (id === 's-voice') s.voice = e.target.value;
       else if (id === 's-theme') { s.theme = e.target.value; applyTheme(); }
       else if (id === 's-import') {

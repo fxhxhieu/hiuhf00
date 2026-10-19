@@ -37,6 +37,11 @@ const Data = (() => {
   TOPICS.forEach((t) => { topicMap[t.key] = t; });
 
   const levelIndex = (k) => LEVELS.findIndex((l) => l.key === k);
+  const ipaMap = {};
+  String((typeof window !== 'undefined' && window.IPA_RAW) || '').split('\n').forEach((l) => {
+    const i = l.indexOf('|');
+    if (i > 0) ipaMap[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+  });
   const raw = (typeof window !== 'undefined' && window.VOCAB_RAW) || [];
   const words = [];
   const byId = new Map();
@@ -60,6 +65,7 @@ const Data = (() => {
       const w = { word: p[0], pos: p[1], vi: p[2], def: p[3], ex: p[4], level: block.level, topic };
       w.id = w.word.toLowerCase().replace(/\s+/g, '-') + '~' + w.pos;
       if (byId.has(w.id)) { warnings.push('Trùng từ: ' + w.id); return; }
+      w.ipa = ipaMap[w.id] || ipaMap[w.word.toLowerCase()] || '';
       byId.set(w.id, w);
       words.push(w);
     });
@@ -101,5 +107,8 @@ const Data = (() => {
 
   const texts = (typeof window !== 'undefined' && window.TEXTS) || [];
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, warnings };
+  const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
+  const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
+
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, pairs, ipaOf, warnings };
 })();
