@@ -160,7 +160,7 @@ prize|n|giải thưởng|something given to the winner|She won the first prize.
 festival|n|lễ hội|a special time of celebration|The festival lasts three days.
 joke|n|câu chuyện cười|something you say to make people laugh|He tells a funny joke.
 enjoy|v|thích thú|to like doing something|I enjoy reading.
-win|v|thắng|to be first in a competition|Our team won the game.
+win|v|thắng|to be first in a competition|Our team will win the game.
 score|v|ghi bàn, ghi điểm|to get a point in a game|He scored two goals.
 paint|v|vẽ tranh, sơn|to make a picture with paint|She paints the wall blue.
 collect|v|sưu tầm|to bring things together as a hobby|He collects old stamps.
@@ -223,7 +223,7 @@ marry|v|kết hôn|to become husband and wife|They marry next year.
 # verbs
 agree|v|đồng ý|to have the same opinion|I agree with you.
 believe|v|tin|to think something is true|I believe you.
-break|v|làm vỡ, hỏng|to damage something into pieces|He broke a glass.
+break|v|làm vỡ, hỏng|to damage something into pieces|Be careful not to break the glass.
 build|v|xây dựng|to make a house or structure|They build a new school.
 change|v|thay đổi|to become different|The weather changes quickly.
 check|v|kiểm tra|to look at something to make sure it is right|Check your answers.
@@ -234,7 +234,7 @@ describe|v|mô tả|to say what someone or something is like|Describe your house
 die|v|chết|to stop living|The flowers die in winter.
 enter|v|đi vào|to come or go into a place|Please enter the room.
 explain|v|giải thích|to make something clear|Can you explain this word?
-fall|v|ngã, rơi|to drop to a lower place|He fell off his bike.
+fall|v|ngã, rơi|to drop to a lower place|Leaves fall from the trees in autumn.
 fill|v|đổ đầy|to make something full|Fill the glass with water.
 finish|v|hoàn thành|to complete something|I finish work at five.
 follow|v|đi theo|to go after someone|Follow me, please.

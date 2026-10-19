@@ -222,7 +222,7 @@ move|v|di chuyển|to change place or position|Please move the chair.
 rain|v|mưa|to fall as drops of water|It rains a lot in summer.
 smile|v|mỉm cười|to show happiness with your mouth|She smiles at me.
 laugh|v|cười to|to make a sound when something is funny|We laugh at his jokes.
-cry|v|khóc|to have tears come from your eyes|The baby cries at night.
+cry|v|khóc|to have tears come from your eyes|The baby may cry at night.
 go to bed|v|đi ngủ|to get into bed to sleep|I go to bed at ten.
 
 # adj

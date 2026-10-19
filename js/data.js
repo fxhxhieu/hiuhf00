@@ -34,7 +34,9 @@ const Data = (() => {
     { key: 'verbs', vi: 'Động từ thông dụng', icon: '🏃' },
     { key: 'adj', vi: 'Tính từ thông dụng', icon: '✨' },
     { key: 'func', vi: 'Từ chức năng & trạng từ', icon: '🔗' },
-    { key: 'abstract', vi: 'Khái niệm & ý tưởng', icon: '💡' }
+    { key: 'abstract', vi: 'Khái niệm & ý tưởng', icon: '💡' },
+    { key: 'ielts', vi: 'IELTS: từ học thuật thường gặp', icon: '🎯' },
+    { key: 'toeic', vi: 'TOEIC: công sở & kinh doanh', icon: '📈' }
   ];
   const topicMap = {};
   TOPICS.forEach((t) => { topicMap[t.key] = t; });
@@ -44,6 +46,11 @@ const Data = (() => {
   String((typeof window !== 'undefined' && window.IPA_RAW) || '').split('\n').forEach((l) => {
     const i = l.indexOf('|');
     if (i > 0) ipaMap[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+  });
+  const emojiMap = {};
+  String((typeof window !== 'undefined' && window.EMOJI_RAW) || '').split('\n').forEach((l) => {
+    const i = l.indexOf('|');
+    if (i > 0) emojiMap[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim();
   });
   const raw = (typeof window !== 'undefined' && window.VOCAB_RAW) || [];
   const words = [];
@@ -69,6 +76,7 @@ const Data = (() => {
       w.id = w.word.toLowerCase().replace(/\s+/g, '-') + '~' + w.pos;
       if (byId.has(w.id)) { warnings.push('Trùng từ: ' + w.id); return; }
       w.ipa = ipaMap[w.id] || ipaMap[w.word.toLowerCase()] || '';
+      w.emoji = emojiMap[w.id] || (w.pos === 'n' ? emojiMap[w.word.toLowerCase()] : '') || '';
       byId.set(w.id, w);
       words.push(w);
     });
@@ -81,6 +89,47 @@ const Data = (() => {
   // Chỉ mục tra từ (từ cấp thấp nhất được ưu tiên).
   const index = new Map();
   words.forEach((w) => { const k = w.word.toLowerCase(); if (!index.has(k)) index.set(k, w); });
+
+  /* ----- Lộ trình: chia kho từ thành các bài nhỏ (mỗi bài khoảng 10 từ) ----- */
+  const A0_UNITS = [
+    ['Chào hỏi cơ bản', '👋', 'hi,bye,good morning,good afternoon,good evening,good night,how are you,i am fine,nice to meet you,see you later'],
+    ['Lịch sự khi giao tiếp', '🙏', 'thank you,you are welcome,excuse me,i am sorry,no problem,of course,have a nice day,okay,welcome,thank,excuse'],
+    ['Hỏi và trả lời', '💬', 'what is your name,how old are you,where are you from,how much is it,i do not know,i do not understand,say it again,speak slowly'],
+    ['Cách xưng hô', '🧑‍🤝‍🧑', 'sir,mr,mrs,ms,mom,dad,i,you,he,she'],
+    ['Đại từ nhân xưng', '🙋', 'it,we,they,me,him,her,us,them'],
+    ['Từ chỉ sở hữu', '🏷️', 'my,your,his,its,our,their,whose'],
+    ['Mạo từ & từ chỉ định', '👉', 'a,an,the,this,that,these,those'],
+    ['Động từ to be và have', '🧩', 'am,is,are,was,were,been,has,had,does,did'],
+    ['Trợ động từ', '⚙️', 'can,could,will,would,should,must,might'],
+    ['Số 13 đến 90', '🔢', 'thirteen,fourteen,fifteen,sixteen,seventeen,eighteen,nineteen,forty,sixty,seventy,eighty,ninety,fourth,fifth,quarter'],
+    ['Vài từ hữu ích', '✨', 'now,than,out,off,gray,left,straight']
+  ];
+  const units = [];
+  const unitById = new Map();
+  (function buildUnits() {
+    const a0 = words.filter((w) => w.level === 'A0');
+    const byText = new Map();
+    a0.forEach((w) => { byText.set(w.word.toLowerCase(), w); });
+    const used = new Set();
+    A0_UNITS.forEach((u, i) => {
+      const ids = [];
+      u[2].split(',').forEach((t) => { const w = byText.get(t.trim()); if (w && !used.has(w.id)) { used.add(w.id); ids.push(w.id); } });
+      if (i === A0_UNITS.length - 1) a0.forEach((w) => { if (!used.has(w.id)) { used.add(w.id); ids.push(w.id); } });
+      if (ids.length) units.push({ id: 'a0-' + (i + 1), level: 'A0', topic: 'basics', title: u[0], icon: u[1], ids });
+    });
+    LEVELS.forEach((l) => {
+      if (l.key === 'A0') return;
+      TOPICS.forEach((t) => {
+        const ws = words.filter((w) => w.level === l.key && w.topic === t.key);
+        if (!ws.length) return;
+        const chunks = [];
+        for (let i = 0; i < ws.length; i += 10) chunks.push(ws.slice(i, i + 10));
+        if (chunks.length > 1 && chunks[chunks.length - 1].length < 5) { const last = chunks.pop(); chunks[chunks.length - 1] = chunks[chunks.length - 1].concat(last); }
+        chunks.forEach((c, k) => units.push({ id: l.key.toLowerCase() + '-' + t.key + '-' + (k + 1), level: l.key, topic: t.key, title: t.vi + (chunks.length > 1 ? ' (' + (k + 1) + '/' + chunks.length + ')' : ''), icon: t.icon, ids: c.map((w) => w.id) }));
+      });
+    });
+    units.forEach((u, i) => { u.n = i + 1; unitById.set(u.id, u); });
+  })();
 
   function stems(t) {
     const out = [t];
@@ -114,5 +163,5 @@ const Data = (() => {
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, warnings };
 })();

@@ -18,7 +18,7 @@ const Store = (() => {
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {} });
+  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 } });
 
   function normalize(o) {
     const b = blank();
@@ -28,6 +28,10 @@ const Store = (() => {
     if (o.log && typeof o.log === 'object') b.log = o.log;
     if (o.texts && typeof o.texts === 'object') b.texts = o.texts;
     if (o.listen && typeof o.listen === 'object') b.listen = o.listen;
+    if (o.path && typeof o.path === 'object') b.path = o.path;
+    if (o.badges && typeof o.badges === 'object') b.badges = o.badges;
+    if (o.flagged && typeof o.flagged === 'object') b.flagged = o.flagged;
+    if (o.speak && typeof o.speak === 'object') Object.assign(b.speak, o.speak);
     if (o.daily && typeof o.daily === 'object') Object.assign(b.daily, o.daily);
     if (o.settings && typeof o.settings === 'object') {
       Object.assign(b.settings, o.settings);
@@ -87,6 +91,21 @@ const Store = (() => {
     save();
   }
 
+  /** Đánh dấu / bỏ đánh dấu từ hay sai (từ bị sai ở bài nghe, bài nói). delta > 0: sai, delta < 0: đúng. */
+  function flag(id, delta) {
+    const n = Math.max(0, (state.flagged[id] || 0) + delta);
+    if (n) state.flagged[id] = Math.min(n, 5); else delete state.flagged[id];
+    save();
+  }
+  function setPath(id, patch) { state.path[id] = Object.assign(state.path[id] || {}, patch); save(); }
+  function logSpeak(ok) { state.speak.n += 1; if (ok) state.speak.ok += 1; save(); }
+  function award(id) {
+    if (state.badges[id]) return false;
+    state.badges[id] = Date.now();
+    save();
+    return true;
+  }
+
   function streak() {
     const d = new Date();
     d.setHours(12, 0, 0, 0);
@@ -110,7 +129,7 @@ const Store = (() => {
     card: (id) => state.cards[id] || null,
     setCard(id, c) { state.cards[id] = c; save(); },
     delCard(id) { delete state.cards[id]; save(); },
-    save, flush, daily, dayKey, logReview, logListen, streak, textState,
+    save, flush, daily, dayKey, logReview, logListen, flag, setPath, logSpeak, award, streak, textState,
     exportJSON() { return JSON.stringify(state, null, 2); },
     importJSON(text) {
       const o = JSON.parse(text);

@@ -100,7 +100,7 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 800; font-size: 1.25rem; letter-spacing: -.02em; }
-.logo { display: block; }
+.logo { display: block; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line); }
 .nav { display: flex; gap: 4px; }
 .nav a {
   display: flex; align-items: center; gap: 8px;
@@ -121,7 +121,7 @@ button { cursor: pointer; }
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
     background: var(--surface); border-top: 1px solid var(--line);
   }
-  .nav a { flex-direction: column; gap: 2px; padding: 6px 2px; border-radius: 14px; font-size: .68rem; flex: 1 1 0; min-width: 0; justify-content: center; text-align: center; }
+  .nav a { flex-direction: column; gap: 2px; padding: 6px 1px; border-radius: 14px; font-size: .62rem; white-space: nowrap; flex: 1 1 0; min-width: 0; justify-content: center; text-align: center; }
   .nav a svg { width: 22px; height: 22px; }
 }
 
@@ -480,3 +480,47 @@ mark { background: color-mix(in srgb, var(--pink) 28%, transparent); color: inhe
 .transcript p { margin: 0 0 10px; }
 .transcript p:last-child { margin-bottom: 0; }
 .misslist { padding-left: 18px; display: grid; gap: 6px; }
+
+/* ---- Emoji, lộ trình, huy hiệu, luyện nói ---- */
+.emo { font-size: 1.15em; margin-right: 6px; font-style: normal; }
+.fc-emo { font-size: 3.2rem; line-height: 1.1; text-align: center; margin-bottom: 4px; }
+.fc-emo .emo { margin: 0; }
+.pathcard { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.pathcard h2 { margin: 2px 0 6px; }
+.pathcard .progress { min-width: 220px; }
+.lvsec { margin-top: 14px; }
+.lvsec > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; font-size: 1.05rem; list-style: none; }
+.lvsec > summary::-webkit-details-marker { display: none; }
+.ugrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-top: 12px; }
+.ucard { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); text-decoration: none; background: var(--surface); }
+.ucard:hover { border-color: var(--brand); }
+.ucard.cur { border-color: var(--brand); background: var(--brand-soft); }
+.ucard.done .ucard-s { color: var(--ok); }
+.ucard.locked { opacity: .55; }
+.ucard-n { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--bg-2); color: var(--muted); font-size: .8rem; font-weight: 700; }
+.ucard-i { font-size: 1.4rem; }
+.ucard-b { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.ucard-b b { font-size: .95rem; overflow-wrap: anywhere; }
+.ucard-s { font-weight: 800; }
+.steps { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
+.step { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.step-n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-weight: 800; }
+.step-b { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.badge { display: grid; gap: 2px; justify-items: center; text-align: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); opacity: .5; }
+.badge.got { opacity: 1; background: var(--b1-soft); border-color: var(--b1); }
+.badge-i { font-size: 1.8rem; }
+.badge small { font-size: .72rem; }
+.tipbox { margin: 10px 0; }
+.tipbox p { margin: 6px 0 0; }
+.options.pics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.opt-pic { justify-content: center; }
+.opt-pic .pic { font-size: 3rem; line-height: 1.2; }
+.rec { background: var(--bad) !important; border-color: var(--bad) !important; color: #fff !important; }
+@media (max-width: 420px) { .ugrid { grid-template-columns: 1fr; } .pathcard .progress { min-width: 0; width: 100%; } }
+
+/* ---- Chỉnh cho màn hình nhỏ ---- */
+.filters > * { min-width: 0; }
+.filters .input { max-width: 100%; }
+select.input { min-width: 0; flex: 1 1 150px; }
+.field.row input[type="checkbox"] { flex: none; width: 18px; height: 18px; margin-top: 2px; }

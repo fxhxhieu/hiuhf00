@@ -211,7 +211,7 @@ eye|n|mắt|the part of the body you see with|I have brown eyes.
 ear|n|tai|the part of the body you hear with|He has big ears.
 nose|n|mũi|the part of the face you smell with|My nose is cold.
 mouth|n|miệng|the part of the face you eat with|Open your mouth.
-tooth|n|răng|a hard white thing in your mouth|I brush my teeth twice a day.
+tooth|n|răng|a hard white thing in your mouth|Brush each tooth for two minutes.
 hair|n|tóc|the thin threads that grow on your head|She has long black hair.
 neck|n|cổ|the part between the head and the body|The giraffe has a long neck.
 shoulder|n|vai|the part where your arm joins your body|My shoulder hurts.

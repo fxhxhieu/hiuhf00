@@ -181,7 +181,7 @@ increase|v|tăng|to become larger in number or amount|Prices increase every year
 influence|v|ảnh hưởng|to have an effect on someone|Friends influence each other.
 insist|v|khăng khăng|to say firmly that something must happen|She insisted on paying.
 introduce|v|giới thiệu|to present someone to another person|Let me introduce my sister.
-manage to|v|xoay xở làm được|to succeed in doing something difficult|I managed to finish on time.
+manage to|v|xoay xở làm được|to succeed in doing something difficult|I will manage to finish on time.
 mention|v|đề cập|to speak about something briefly|He mentioned your name.
 offer|v|đề nghị|to say you will give something|They offered me a job.
 own|v|sở hữu|to have something that belongs to you|She owns a small shop.

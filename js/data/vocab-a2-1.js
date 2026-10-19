@@ -187,7 +187,7 @@ pass|v|đỗ, vượt qua|to succeed in a test|I passed the exam.
 fail|v|trượt|to not pass a test|He failed the driving test.
 practice|v|luyện tập|to do something many times to get better|I practice English every day.
 remember|v|nhớ|to keep something in your memory|I remember her name.
-forget|v|quên|to not remember something|I forgot my homework.
+forget|v|quên|to not remember something|Do not forget your homework.
 repeat|v|lặp lại|to say or do something again|Please repeat the sentence.
 
 # work
