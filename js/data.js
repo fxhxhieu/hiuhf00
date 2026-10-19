@@ -6,12 +6,15 @@
  */
 const Data = (() => {
   const LEVELS = [
+    { key: 'A0', name: 'A0 · Nhập môn' },
     { key: 'A1', name: 'A1 · Sơ cấp' },
     { key: 'A2', name: 'A2 · Cơ bản' },
     { key: 'B1', name: 'B1 · Trung cấp' }
   ];
 
   const TOPICS = [
+    { key: 'basics', vi: 'Nền tảng: đại từ, mạo từ, trợ động từ', icon: '🧱' },
+    { key: 'greetings', vi: 'Chào hỏi & mẫu câu giao tiếp', icon: '👋' },
     { key: 'people', vi: 'Con người & gia đình', icon: '👪' },
     { key: 'time', vi: 'Thời gian & số đếm', icon: '⏰' },
     { key: 'food', vi: 'Ăn uống', icon: '🍜' },
@@ -107,8 +110,9 @@ const Data = (() => {
 
   const texts = (typeof window !== 'undefined' && window.TEXTS) || [];
 
+  const quiz = (typeof window !== 'undefined' && window.QUIZ) || {};
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, pairs, ipaOf, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, warnings };
 })();

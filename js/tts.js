@@ -35,7 +35,7 @@ const TTS = (() => {
     cancel();
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(text);
-      const v = pick();
+      const v = opts.voice || pick();
       if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
       u.rate = opts.rate || Store.settings.rate || 0.9;
       u.onend = () => resolve(true);

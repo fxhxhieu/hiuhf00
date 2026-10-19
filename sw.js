@@ -1,10 +1,10 @@
 /* hiuhf0 — service worker: dùng offline. Ưu tiên mạng, mất mạng thì lấy bản đã lưu. */
-const CACHE = 'hiuhf0-v2';
+const CACHE = 'hiuhf0-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/data.js', 'js/store.js', 'js/srs.js', 'js/tts.js', 'js/app.js',
-  'js/data/vocab-a1-1.js', 'js/data/vocab-a1-2.js', 'js/data/vocab-a2-1.js', 'js/data/vocab-a2-2.js',
-  'js/data/vocab-b1-1.js', 'js/data/vocab-b1-2.js', 'js/data/texts.js', 'js/data/ipa.js', 'js/data/pairs.js',
+  'js/data/vocab-a0.js', 'js/data/vocab-a1-1.js', 'js/data/vocab-a1-2.js', 'js/data/vocab-a2-1.js', 'js/data/vocab-a2-2.js',
+  'js/data/vocab-b1-1.js', 'js/data/vocab-b1-2.js', 'js/data/texts.js', 'js/data/texts-a0.js', 'js/data/quiz.js', 'js/data/ipa.js', 'js/data/pairs.js',
   'icons/icon-192.png', 'icons/icon-512.png'
 ];
 

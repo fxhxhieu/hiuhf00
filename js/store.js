@@ -18,7 +18,7 @@ const Store = (() => {
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {} });
+  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {} });
 
   function normalize(o) {
     const b = blank();
@@ -27,6 +27,7 @@ const Store = (() => {
     if (o.pinned && typeof o.pinned === 'object') b.pinned = o.pinned;
     if (o.log && typeof o.log === 'object') b.log = o.log;
     if (o.texts && typeof o.texts === 'object') b.texts = o.texts;
+    if (o.listen && typeof o.listen === 'object') b.listen = o.listen;
     if (o.daily && typeof o.daily === 'object') Object.assign(b.daily, o.daily);
     if (o.settings && typeof o.settings === 'object') {
       Object.assign(b.settings, o.settings);
@@ -75,15 +76,26 @@ const Store = (() => {
     save();
   }
 
+  /** Ghi kết quả một câu luyện nghe (tính vào chuỗi ngày học). */
+  function logListen(mode, ok) {
+    const m = state.listen[mode] || (state.listen[mode] = { n: 0, ok: 0 });
+    m.n += 1;
+    if (ok) m.ok += 1;
+    const k = dayKey();
+    const l = state.log[k] || (state.log[k] = { n: 0, r: 0, ok: 0 });
+    l.l = (l.l || 0) + 1;
+    save();
+  }
+
   function streak() {
     const d = new Date();
     d.setHours(12, 0, 0, 0);
     const t = state.log[dayKey(d.getTime())];
-    if (!(t && t.n + t.r > 0)) d.setDate(d.getDate() - 1);
+    if (!(t && t.n + t.r + (t.l || 0) > 0)) d.setDate(d.getDate() - 1);
     let n = 0;
     for (;;) {
       const l = state.log[dayKey(d.getTime())];
-      if (l && l.n + l.r > 0) { n += 1; d.setDate(d.getDate() - 1); } else break;
+      if (l && l.n + l.r + (l.l || 0) > 0) { n += 1; d.setDate(d.getDate() - 1); } else break;
     }
     return n;
   }
@@ -98,7 +110,7 @@ const Store = (() => {
     card: (id) => state.cards[id] || null,
     setCard(id, c) { state.cards[id] = c; save(); },
     delCard(id) { delete state.cards[id]; save(); },
-    save, flush, daily, dayKey, logReview, streak, textState,
+    save, flush, daily, dayKey, logReview, logListen, streak, textState,
     exportJSON() { return JSON.stringify(state, null, 2); },
     importJSON(text) {
       const o = JSON.parse(text);

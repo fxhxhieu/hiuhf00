@@ -82,12 +82,13 @@
   }
 
   /* ================= Định tuyến ================= */
-  const routes = { learn: renderLearn, library: renderLibrary, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
+  const routes = { learn: renderLearn, library: renderLibrary, listen: renderListen, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
   let currentRoute = 'learn';
   let S = null; // phiên học
 
   function cleanup() {
     S = null;
+    L = null;
     stopShadow();
     closeSheet();
     TTS.cancel();
@@ -99,7 +100,7 @@
     const parts = (location.hash.replace(/^#\/?/, '') || 'learn').split('/');
     const name = routes[parts[0]] ? parts[0] : 'learn';
     currentRoute = name;
-    $$('.nav a').forEach((a) => { if (a.dataset.r === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('.nav a').forEach((a) => { if (a.dataset.r === (name === 'sound' ? 'listen' : name)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     routes[name](parts[1]);
     window.scrollTo(0, 0);
   }
@@ -165,7 +166,7 @@
     for (let i = 13; i >= 0; i--) {
       const d = new Date(d0); d.setDate(d.getDate() - i);
       const l = log[Store.dayKey(d.getTime())];
-      days.push({ n: l ? l.n + l.r : 0, w: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()] });
+      days.push({ n: l ? l.n + l.r + (l.l || 0) : 0, w: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()] });
     }
     const max = Math.max(10, ...days.map((x) => x.n));
     const chart = days.map((x) => `<div class="bar" title="${x.n} lượt"><i style="height:${Math.max(3, (x.n / max) * 100)}%"></i><span>${x.w}</span></div>`).join('');
@@ -549,7 +550,7 @@
 
   /* ================= TỪ VỰNG (thư viện) ================= */
   const lib = { level: 'all', topic: 'all', mv: 'all', pos: 'all', q: '', limit: 120 };
-  const POS_NAMES = { n: 'Danh từ', v: 'Động từ', adj: 'Tính từ', adv: 'Trạng từ' };
+  const POS_NAMES = { n: 'Danh từ', v: 'Động từ', adj: 'Tính từ', adv: 'Trạng từ', pron: 'Đại từ', det: 'Từ hạn định', prep: 'Giới từ', conj: 'Liên từ', num: 'Số từ', int: 'Thán từ', phr: 'Cụm từ' };
 
   function libFiltered() {
     const raw = lib.q.trim().toLowerCase();
@@ -650,6 +651,446 @@
     };
   }
 
+  /* ================= NGHE ================= */
+  const LISTEN_MODES = [
+    { key: 'word', icon: '👂', name: 'Nghe & chọn nghĩa', desc: 'Nghe một từ, chọn nghĩa tiếng Việt đúng.' },
+    { key: 'spell', icon: '✍️', name: 'Nghe & viết từ', desc: 'Nghe một từ rồi gõ lại đúng chính tả.' },
+    { key: 'number', icon: '🔢', name: 'Nghe số & giá tiền', desc: 'Phân biệt 13 và 30, nghe giá tiền và số điện thoại.' },
+    { key: 'clock', icon: '🕒', name: 'Nghe giờ', desc: 'Nghe giờ rồi chọn đồng hồ đúng.' },
+    { key: 'order', icon: '🧩', name: 'Nghe & sắp xếp câu', desc: 'Nghe cả câu rồi chạm các từ theo đúng thứ tự.' },
+    { key: 'sentence', icon: '📝', name: 'Nghe & chép câu', desc: 'Nghe cả câu, gõ lại. Hệ thống chấm từng từ.' },
+    { key: 'dialog', icon: '💬', name: 'Nghe hiểu hội thoại', desc: 'Nghe một bài, trả lời 3 câu hỏi.' }
+  ];
+  const LISTEN_LEVELS = ['A0', 'A1', 'A2', 'B1', 'all'];
+  const LISTEN_RATES = [['0.65', 'Chậm'], ['0.85', 'Vừa'], ['1', 'Nhanh']];
+  const QUESTIONS_PER_ROUND = 10;
+  let L = null;
+
+  const lsetting = () => ({ level: Store.settings.listenLevel || 'A0', rate: Store.settings.listenRate || 0.85 });
+  const stripSpeaker = (s) => String(s).replace(/^[A-Z][A-Za-z]*:\s*/, '');
+  const sampleN = (arr, n) => shuffle(arr.slice()).slice(0, n);
+  const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  function numWords(n) {
+    if (n < 20) return ONES[n];
+    if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
+    if (n < 1000) return ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + numWords(n % 100) : '');
+    return numWords(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? (n % 1000 < 100 ? ' and ' : ' ') + numWords(n % 1000) : '');
+  }
+
+  function listenPoolWords(lv) { return Data.words.filter((w) => lv === 'all' || w.level === lv); }
+  function listenSentences(lv, minW, maxW) {
+    const out = [];
+    const seen = new Set();
+    const add = (en, vi) => {
+      const t = en.trim();
+      const n = t.split(/\s+/).length;
+      if (n < minW || n > maxW || seen.has(t.toLowerCase())) return;
+      seen.add(t.toLowerCase());
+      out.push({ en: t, vi: vi || '' });
+    };
+    Data.texts.filter((t) => lv === 'all' || t.level === lv).forEach((t) => t.sentences.forEach((s) => add(stripSpeaker(s[0]), stripSpeaker(s[1]))));
+    listenPoolWords(lv).forEach((w) => add(w.ex, ''));
+    return out;
+  }
+
+  /* ----- Tạo câu hỏi ----- */
+  function distractors(w, pool) {
+    const base = pool.filter((x) => x.id !== w.id && x.vi !== w.vi && x.word.toLowerCase() !== w.word.toLowerCase());
+    const src = base.length >= 3 ? base : Data.words.filter((x) => x.id !== w.id && x.vi !== w.vi);
+    const samePos = shuffle(src.filter((x) => x.pos === w.pos));
+    const rest = shuffle(src.slice());
+    const picks = [];
+    for (const x of [...samePos, ...rest]) {
+      if (picks.length >= 3) break;
+      if (!picks.some((p) => p.vi === x.vi)) picks.push(x);
+    }
+    return picks;
+  }
+
+  function makeWordQs(lv) {
+    const pool = listenPoolWords(lv);
+    return sampleN(pool, QUESTIONS_PER_ROUND).map((w) => {
+      const opts = shuffle([w, ...distractors(w, pool)]);
+      return { type: 'word', w, say: w.word, opts: opts.map((o) => o.vi), a: opts.indexOf(w) };
+    });
+  }
+  function makeSpellQs(lv) {
+    const pool = listenPoolWords(lv).filter((w) => w.pos !== 'phr');
+    return sampleN(pool, QUESTIONS_PER_ROUND).map((w) => ({ type: 'spell', w, say: w.word }));
+  }
+  function makeSentenceQs(lv, kind) {
+    const lo = lv === 'A0' ? 2 : 3;
+    const hi = kind === 'order' ? (lv === 'A0' || lv === 'A1' ? 7 : 9) : (lv === 'A0' ? 8 : lv === 'A1' ? 10 : 15);
+    return sampleN(listenSentences(lv, lo, hi), QUESTIONS_PER_ROUND).map((s) => ({ type: kind, s, say: s.en }));
+  }
+
+  function makeNumberQs(lv) {
+    const qs = [];
+    const confus = [[13, 30], [14, 40], [15, 50], [16, 60], [17, 70], [18, 80], [19, 90]];
+    const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      const roll = Math.random();
+      let q;
+      if (lv === 'A0' || roll < 0.45) {
+        let n;
+        if (roll < 0.3 || lv === 'A0') n = Math.random() < 0.45 ? confus[rnd(0, 6)][rnd(0, 1)] : rnd(0, 100);
+        else n = lv === 'A1' ? rnd(100, 999) : rnd(1000, 99999);
+        q = { type: 'number', kind: 'num', say: numWords(n), answer: String(n), prompt: 'Gõ con số bạn nghe được (chỉ gõ chữ số).' };
+      } else if (roll < 0.75) {
+        const d = lv === 'A1' ? rnd(1, 99) : rnd(1, 450);
+        const c = [0, 25, 50, 75, 99][rnd(0, 4)];
+        const say = numWords(d) + ' dollar' + (d === 1 ? '' : 's') + (c ? ' and ' + numWords(c) + ' cents' : '');
+        q = { type: 'number', kind: 'price', say, answer: c ? d + '.' + String(c).padStart(2, '0') : String(d), prompt: 'Gõ giá tiền bằng đô la, ví dụ 12.50 hoặc 7.' };
+      } else {
+        const len = lv === 'A1' ? 5 : 7;
+        let digits = '';
+        for (let k = 0; k < len; k++) digits += String(rnd(0, 9));
+        q = { type: 'number', kind: 'phone', say: digits.split('').map((x) => ONES[+x]).join(', '), answer: digits, prompt: 'Máy đọc từng chữ số. Gõ lại dãy số bạn nghe được.' };
+      }
+      qs.push(q);
+    }
+    return qs;
+  }
+
+  function timeSay(h, m) {
+    const hh = (x) => numWords(((x - 1 + 12) % 12) + 1);
+    if (m === 0) return `It is ${hh(h)} o'clock.`;
+    if (m === 15) return `It is a quarter past ${hh(h)}.`;
+    if (m === 30) return `It is half past ${hh(h)}.`;
+    if (m === 45) return `It is a quarter to ${hh(h + 1)}.`;
+    if (m < 30) return `It is ${numWords(m)} past ${hh(h)}.`;
+    return `It is ${numWords(60 - m)} to ${hh(h + 1)}.`;
+  }
+  const timeStr = (h, m) => (((h - 1 + 12) % 12) + 1) + ':' + String(m).padStart(2, '0');
+  function clockSVG(h, m) {
+    const hand = (deg, len, w) => {
+      const r = (deg - 90) * Math.PI / 180;
+      return `<line x1="50" y1="50" x2="${(50 + len * Math.cos(r)).toFixed(1)}" y2="${(50 + len * Math.sin(r)).toFixed(1)}" stroke-width="${w}" stroke-linecap="round"/>`;
+    };
+    let ticks = '';
+    for (let i = 0; i < 12; i++) {
+      const r = i * 30 * Math.PI / 180;
+      ticks += `<line x1="${(50 + 40 * Math.sin(r)).toFixed(1)}" y1="${(50 - 40 * Math.cos(r)).toFixed(1)}" x2="${(50 + 44 * Math.sin(r)).toFixed(1)}" y2="${(50 - 44 * Math.cos(r)).toFixed(1)}" stroke-width="2"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" class="clock" aria-hidden="true"><g stroke="currentColor" fill="none"><circle cx="50" cy="50" r="46" stroke-width="3"/>${ticks}${hand((h % 12) * 30 + m * 0.5, 24, 5)}${hand(m * 6, 36, 3)}</g></svg>`;
+  }
+  function makeClockQs(lv) {
+    const mins = lv === 'A0' ? [0, 15, 30, 45] : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+    const qs = [];
+    for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+      const h = 1 + Math.floor(Math.random() * 12);
+      const m = mins[Math.floor(Math.random() * mins.length)];
+      const set = new Map([[timeStr(h, m), [h, m]]]);
+      const tries = [[h, mins[(mins.indexOf(m) + 1) % mins.length]], [h % 12 + 1, m], [(h + 10) % 12 + 1, m], [h, (60 - m) % 60], [h % 12 + 1, (60 - m) % 60], [h, mins[Math.floor(Math.random() * mins.length)]]];
+      for (const t of shuffle(tries)) { if (set.size >= 4) break; if (!set.has(timeStr(t[0], t[1]))) set.set(timeStr(t[0], t[1]), t); }
+      while (set.size < 4) { const hh = 1 + Math.floor(Math.random() * 12); const mm = mins[Math.floor(Math.random() * mins.length)]; set.set(timeStr(hh, mm), [hh, mm]); }
+      const list = shuffle(Array.from(set.values()));
+      const idx = list.findIndex((t) => t[0] === h && t[1] === m);
+      qs.push({ type: 'clock', say: timeSay(h, m), times: list, a: idx, answerText: timeStr(h, m) });
+    }
+    return qs;
+  }
+
+  function makeDialogQs(lv) {
+    const texts = Data.texts.filter((t) => Data.quiz[t.id] && (lv === 'all' || t.level === lv));
+    if (!texts.length) return null;
+    const t = texts[Math.floor(Math.random() * texts.length)];
+    const qs = Data.quiz[t.id].map((it) => {
+      const order = shuffle(it.o.map((x, i) => i));
+      return { type: 'dialog', text: t, q: it.q, v: it.v, opts: order.map((i) => it.o[i]), a: order.indexOf(it.a) };
+    });
+    return qs;
+  }
+
+  /* ----- Điều khiển phiên ----- */
+  const wordsOf = (s) => String(s).toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9'\s-]/g, ' ').split(/\s+/).filter(Boolean);
+  const modeOf = (k) => LISTEN_MODES.find((m) => m.key === k);
+
+  function startListen(mode) {
+    const { level, rate } = lsetting();
+    const builders = { word: makeWordQs, spell: makeSpellQs, number: makeNumberQs, clock: makeClockQs, order: (lv) => makeSentenceQs(lv, 'order'), sentence: (lv) => makeSentenceQs(lv, 'sentence'), dialog: makeDialogQs };
+    const qs = builders[mode](level);
+    if (!qs || !qs.length) { toast('Chưa có đủ dữ liệu ở cấp này. Hãy chọn cấp khác.'); return; }
+    L = { mode, level, rate, qs, i: 0, score: 0, missed: [], cur: null, answered: false, token: 0, phase: mode === 'dialog' ? 'intro' : 'q', built: [], picked: null, voices: null, showText: false };
+    if (mode === 'dialog') return renderDialogIntro();
+    nextListenQ();
+  }
+
+  function listenFrame(inner, footer) {
+    const pct = Math.round((L.i / L.qs.length) * 100);
+    view.innerHTML = `
+      <section class="session">
+        <div class="s-top">
+          <button class="icon-btn" id="l-exit" aria-label="Thoát bài nghe">✕</button>
+          <div class="progress"><i style="width:${pct}%"></i></div>
+          <span class="s-count">${L.i}/${L.qs.length}</span>
+        </div>
+        <div class="s-counts"><span class="k-learn">Đúng ${L.score}</span><span class="s-meta">${esc(modeOf(L.mode).name)} · ${L.level === 'all' ? 'mọi cấp' : esc(L.level)}</span></div>
+        <div id="stage">${inner}</div>
+        <div id="actions">${footer || ''}</div>
+      </section>`;
+    view.onclick = onListenClick;
+    view.onsubmit = onListenSubmit;
+  }
+
+  const listenAudio = (say, extra = '') => `<div class="prompt"><button class="btn lg" data-say="${esc(say)}" data-rate="${L.rate}">🔊 Nghe <kbd>P</kbd></button><button class="btn" data-say="${esc(say)}" data-rate="0.55">🐢 Nghe chậm <kbd>S</kbd></button>${extra}</div>`;
+
+  function nextListenQ() {
+    if (!L) return;
+    if (L.i >= L.qs.length) return renderListenSummary();
+    L.cur = L.qs[L.i];
+    L.answered = false;
+    L.picked = null;
+    L.built = [];
+    L.hint = false;
+    L.typed = '';
+    drawListenQ();
+    if (L.cur.type !== 'dialog') TTS.speak(L.cur.say, { rate: L.rate });
+  }
+
+  function optionsHTML(labels, q, extraFn) {
+    return `<div class="options">${labels.map((lab, i) => {
+      let cls = 'opt';
+      if (L.answered) cls += i === q.a ? ' correct' : (L.picked === i ? ' wrong' : ' dim');
+      return `<button class="${cls}" data-opt="${i}" ${L.answered ? 'disabled' : ''}><kbd>${i + 1}</kbd>${extraFn ? extraFn(i) : ''}<span>${lab}</span></button>`;
+    }).join('')}</div>`;
+  }
+
+  function continueBtn() {
+    return `<button class="btn primary lg block" data-l="next">${L.i + 1 >= L.qs.length ? 'Xem kết quả' : 'Tiếp tục'} <kbd>Enter</kbd></button>`;
+  }
+
+  function typeFormHTML(placeholder, hintBtn) {
+    return `<form class="typebox" id="lf" autocomplete="off"><input id="li" class="input lg" type="text" inputmode="${L.cur.type === 'number' ? 'decimal' : 'text'}" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${esc(placeholder)}" aria-label="Câu trả lời"><button class="btn primary" type="submit">Kiểm tra</button></form>
+      <div class="row wrap center-row">${hintBtn || ''}<button class="btn ghost sm" data-l="giveup">Mình không nghe ra</button></div>`;
+  }
+
+  function drawListenQ() {
+    const q = L.cur;
+    const done = L.answered;
+    let stage = '';
+    let foot = '';
+    if (q.type === 'word') {
+      stage = `${listenAudio(q.say)}<p class="muted center">Nghe và chọn nghĩa đúng</p>${optionsHTML(q.opts.map(esc), q)}${done ? `<div class="card reveal">${infoHTML(q.w)}</div>` : ''}`;
+    } else if (q.type === 'spell') {
+      const hint = L.hint ? `<p class="muted center">Gợi ý: ${q.w.word.length} chữ cái, bắt đầu bằng “${esc(q.w.word.charAt(0))}”</p>` : '';
+      stage = `${listenAudio(q.say)}<p class="muted center">Nghe và viết lại từ bạn nghe được</p>${hint}`;
+      if (!done) stage += typeFormHTML('Gõ từ tiếng Anh…', '<button class="btn ghost sm" data-l="hint">Gợi ý</button>');
+      else stage += `<div class="result ${q.ok ? 'ok' : 'bad'}">${q.ok ? 'Chính xác' : `Chưa đúng. Đáp án: <b>${esc(q.w.word)}</b>`}${L.typed && !q.ok ? `<small>Bạn gõ: ${esc(L.typed)}</small>` : ''}</div><div class="card reveal">${infoHTML(q.w)}</div>`;
+    } else if (q.type === 'sentence') {
+      stage = `${listenAudio(q.say)}<p class="muted center">Nghe cả câu và gõ lại. Không cần viết hoa hay dấu câu.</p>`;
+      if (!done) stage += typeFormHTML('Gõ lại câu bạn nghe được…');
+      else stage += sentenceResultHTML(q);
+    } else if (q.type === 'order') {
+      const chips = (q.chips || (q.chips = shuffle(q.s.en.split(/\s+/).map((t, i) => ({ t, i }))))).map((c) => {
+        const used = L.built.indexOf(c.i) >= 0;
+        return `<button class="chip-w ${used ? 'used' : ''}" data-chip="${c.i}" ${used || done ? 'disabled' : ''}>${esc(c.t)}</button>`;
+      }).join('');
+      const built = L.built.map((i) => `<button class="chip-w on" data-unchip="${i}" ${done ? 'disabled' : ''}>${esc(q.s.en.split(/\s+/)[i])}</button>`).join('');
+      stage = `${listenAudio(q.say)}<p class="muted center">Chạm các từ theo đúng thứ tự bạn nghe được</p>
+        <div class="buildbox ${done ? (q.ok ? 'ok' : 'bad') : ''}" aria-label="Câu của bạn">${built || '<span class="muted">Câu của bạn sẽ hiện ở đây…</span>'}</div>
+        <div class="chipbank">${chips}</div>
+        ${done ? `<div class="result ${q.ok ? 'ok' : 'bad'}">${q.ok ? 'Chính xác' : `Chưa đúng. Câu đúng: <b>${esc(q.s.en)}</b>`}${q.s.vi ? `<small>${esc(q.s.vi)}</small>` : ''}</div>` : `<div class="row wrap center-row"><button class="btn primary" data-l="check" ${L.built.length === q.s.en.split(/\s+/).length ? '' : 'disabled'}>Kiểm tra</button><button class="btn ghost sm" data-l="clear">Xóa làm lại</button></div>`}`;
+    } else if (q.type === 'number') {
+      stage = `${listenAudio(q.say)}<p class="muted center">${esc(q.prompt)}</p>`;
+      if (!done) stage += typeFormHTML('Gõ số…');
+      else stage += `<div class="result ${q.ok ? 'ok' : 'bad'}">${q.ok ? 'Chính xác' : `Chưa đúng. Đáp án: <b>${esc(q.kind === 'price' ? '$' + q.answer : q.answer)}</b>`}${L.typed && !q.ok ? `<small>Bạn gõ: ${esc(L.typed)}</small>` : ''}<small>Máy đọc: “${esc(q.say)}”</small></div>`;
+    } else if (q.type === 'clock') {
+      stage = `${listenAudio(q.say)}<p class="muted center">Nghe và chọn đồng hồ đúng</p>
+        ${optionsHTML(q.times.map((t) => esc(timeStr(t[0], t[1]))), q, (i) => clockSVG(q.times[i][0], q.times[i][1]))}
+        ${done ? `<div class="result ${q.ok ? 'ok' : 'bad'}">“${esc(q.say)}” = <b>${esc(q.answerText)}</b></div>` : ''}`;
+    } else if (q.type === 'dialog') {
+      stage = `<div class="prompt"><button class="btn" data-l="playall">🔊 Nghe lại cả bài</button><button class="btn" data-l="playslow">🐢 Nghe chậm</button></div>
+        <h2 class="center qtext">${esc(q.q)}</h2><p class="muted center">${esc(q.v)}</p>${optionsHTML(q.opts.map(esc), q)}`;
+    }
+    if (done) foot = continueBtn();
+    else if (q.type === 'word' || q.type === 'clock' || q.type === 'dialog') foot = '';
+    listenFrame(stage, foot);
+    if (!done && (q.type === 'spell' || q.type === 'sentence' || q.type === 'number')) { const li = $('#li'); if (li) { li.value = L.typed || ''; li.focus({ preventScroll: true }); } }
+  }
+
+  function sentenceResultHTML(q) {
+    const r = scoreSpeech(q.s.en, L.typed);
+    const words = r.T.map((w, k) => `<span class="${r.matched[k] ? 'okw' : 'missw'}">${esc(w)}</span>`).join(' ');
+    return `<div class="result ${q.ok ? 'ok' : 'bad'}">${q.ok ? 'Chính xác' : `Đúng ${r.pct}% số từ`}<div class="sc-words">${words}</div><small>Câu đầy đủ: ${esc(q.s.en)}</small>${q.s.vi ? `<small>${esc(q.s.vi)}</small>` : ''}${!q.ok && L.typed ? `<small>Bạn gõ: ${esc(L.typed)}</small>` : ''}</div>`;
+  }
+
+  function finishAnswer(ok) {
+    const q = L.cur;
+    q.ok = ok;
+    L.answered = true;
+    if (ok) L.score += 1;
+    else L.missed.push(q);
+    Store.logListen(L.mode, ok);
+    drawListenQ();
+  }
+
+  function checkTyped(val) {
+    const q = L.cur;
+    L.typed = val.trim();
+    if (!L.typed) return;
+    let ok = false;
+    if (q.type === 'spell') ok = norm(L.typed) === norm(q.w.word);
+    else if (q.type === 'sentence') { const a = wordsOf(q.s.en), b = wordsOf(L.typed); ok = a.length === b.length && a.every((x, i) => x === b[i]); }
+    else if (q.type === 'number') {
+      const clean = L.typed.replace(/[\s,\-$]/g, '');
+      ok = q.kind === 'phone' ? clean === q.answer : (!isNaN(parseFloat(clean)) && Math.abs(parseFloat(clean) - parseFloat(q.answer)) < 0.001);
+    }
+    finishAnswer(ok);
+  }
+
+  function onListenSubmit(e) {
+    e.preventDefault();
+    if (!L || !L.cur || L.answered) return;
+    checkTyped(($('#li') || {}).value || '');
+  }
+
+  function onListenClick(e) {
+    if (!L) return;
+    if (e.target.closest('[data-say]')) return;
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.id === 'l-exit') { if (confirm('Thoát bài nghe? Kết quả các câu đã làm vẫn được lưu.')) { L = null; TTS.cancel(); renderListen(); } return; }
+    if (btn.id === 'l-start') { L.phase = 'q'; nextListenQ(); return; }
+    if (btn.id === 'l-again') return startListen(L.mode);
+    if (btn.id === 'l-hub') { L = null; return renderListen(); }
+    if (btn.id === 'l-toggle') { L.showText = !L.showText; return renderDialogIntro(); }
+    if (btn.dataset.l === 'playall' || btn.dataset.l === 'playslow') { return listenPlayAll(btn.dataset.l === 'playslow' ? 0.55 : L.rate); }
+    const q = L.cur;
+    if (!q) return;
+    if (btn.dataset.l === 'next') { L.i += 1; return nextListenQ(); }
+    if (L.answered) return;
+    if (btn.dataset.opt != null) { L.picked = +btn.dataset.opt; return finishAnswer(L.picked === q.a); }
+    if (btn.dataset.l === 'hint') { L.hint = true; L.typed = ($('#li') || {}).value || ''; return drawListenQ(); }
+    if (btn.dataset.l === 'giveup') { L.typed = ''; return finishAnswer(false); }
+    if (btn.dataset.chip != null) { L.built.push(+btn.dataset.chip); return drawListenQ(); }
+    if (btn.dataset.unchip != null) { L.built.splice(L.built.indexOf(+btn.dataset.unchip), 1); return drawListenQ(); }
+    if (btn.dataset.l === 'clear') { L.built = []; return drawListenQ(); }
+    if (btn.dataset.l === 'check') {
+      const toks = q.s.en.split(/\s+/);
+      L.typed = L.built.map((i) => toks[i]).join(' ');
+      const a = wordsOf(q.s.en), b = wordsOf(L.typed);
+      return finishAnswer(a.length === b.length && a.every((x, i) => x === b[i]));
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (currentRoute !== 'listen' || !L || (!L.cur && L.phase !== 'intro')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    const k = e.key;
+    if (L.phase === 'intro') { if (k === 'Enter') { const b = $('#l-start'); if (b) { e.preventDefault(); b.click(); } } return; }
+    if (!L.cur) return;
+    if (k === 'p' || k === 'P') { if (L.cur.type === 'dialog') listenPlayAll(L.rate); else TTS.speak(L.cur.say, { rate: L.rate }); return; }
+    if (k === 's' || k === 'S') { if (L.cur.type === 'dialog') listenPlayAll(0.55); else TTS.speak(L.cur.say, { rate: 0.55 }); return; }
+    if (k >= '1' && k <= '4' && !L.answered) { const b = $(`[data-opt="${+k - 1}"]`); if (b) { e.preventDefault(); b.click(); } return; }
+    if ((k === 'Enter' || (k === ' ' && tag !== 'button')) && L.answered) { const b = $('[data-l="next"]'); if (b) { e.preventDefault(); b.click(); } }
+  });
+
+  /* ----- Hội thoại nhiều giọng ----- */
+  function dialogVoices() {
+    const vs = TTS.voices();
+    const us = vs.filter((v) => /en[-_]US/i.test(v.lang));
+    const pool = us.length >= 2 ? us : vs;
+    return pool.length >= 2 ? [pool[0], pool[1]] : null;
+  }
+  async function listenPlayAll(rate) {
+    if (!L) return;
+    const text = L.qs[0].text;
+    const my = ++L.token;
+    if (!L.voices) L.voices = dialogVoices() || [];
+    const speakers = [];
+    TTS.cancel();
+    for (const s of text.sentences) {
+      if (!L || L.token !== my) return;
+      const m = /^([A-Z][A-Za-z]*):/.exec(s[0]);
+      let voice = null;
+      if (m && L.voices.length) { if (speakers.indexOf(m[1]) < 0) speakers.push(m[1]); voice = L.voices[speakers.indexOf(m[1]) % 2]; }
+      await TTS.speak(stripSpeaker(s[0]), { rate, voice });
+      await sleep(280);
+    }
+  }
+
+  function renderDialogIntro() {
+    const t = L.qs[0].text;
+    const lines = L.showText ? `<div class="transcript">${t.sentences.map((s) => `<p>${esc(s[0])}<br><small class="muted">${esc(s[1])}</small></p>`).join('')}</div>` : '<p class="hint">Lời thoại đang được ẩn để bạn luyện nghe. Nghe xong thì bấm “Bắt đầu trả lời”. Cần thì bấm “Xem lời thoại”.</p>';
+    listenFrame(`<div class="card center-card"><div>${lvBadge(t.level)} <span class="muted">${esc(t.kind)}</span></div><h2>${esc(t.title)}</h2><p class="muted">${esc(t.titleVi)}</p>
+      <div class="prompt"><button class="btn lg" data-l="playall">▶ Nghe cả bài</button><button class="btn" data-l="playslow">🐢 Nghe chậm</button></div></div>
+      ${lines}`,
+      `<div class="act2"><button class="btn primary lg" id="l-start"><span>Bắt đầu trả lời</span><kbd>Enter</kbd></button><button class="btn lg" id="l-toggle"><span>${L.showText ? 'Ẩn lời thoại' : 'Xem lời thoại'}</span></button></div>`);
+    $('.s-count').textContent = '0/' + L.qs.length;
+  }
+
+  function renderListenSummary() {
+    const total = L.qs.length;
+    const pct = Math.round((L.score / total) * 100);
+    const mode = L.mode;
+    const msg = pct >= 90 ? 'Tuyệt vời! Bạn nghe rất tốt.' : pct >= 70 ? 'Khá tốt. Luyện thêm một lượt nữa nhé.' : pct >= 40 ? 'Cần luyện thêm. Hãy nghe chậm rồi nghe lại.' : 'Đừng nản. Hãy thử cấp thấp hơn hoặc giảm tốc độ nghe.';
+    const missed = L.missed.map((q) => {
+      let line;
+      if (q.type === 'word' || q.type === 'spell') line = `<b>${esc(q.w.word)}</b>${q.w.ipa ? ` <span class="ipa">/${esc(q.w.ipa)}/</span>` : ''} · ${esc(q.w.vi)}`;
+      else if (q.type === 'sentence' || q.type === 'order') line = esc(q.s.en);
+      else if (q.type === 'number') line = `${esc(q.say)} = <b>${esc(q.answer)}</b>`;
+      else if (q.type === 'clock') line = `${esc(q.say)} = <b>${esc(q.answerText)}</b>`;
+      else line = `${esc(q.q)} · <b>${esc(q.opts[q.a])}</b>`;
+      return `<li>${line}${q.say ? ` <button class="icon-btn sm" data-say="${esc(q.say)}" aria-label="Nghe lại">🔊</button>` : ''}</li>`;
+    }).join('');
+    const transcript = mode === 'dialog' ? `<div class="transcript">${L.qs[0].text.sentences.map((s) => `<p>${esc(s[0])}<br><small class="muted">${esc(s[1])}</small></p>`).join('')}</div>` : '';
+    view.innerHTML = `
+      <section class="card summary">
+        <h1>Xong bài nghe</h1>
+        <div class="stats">
+          <div class="stat"><b>${L.score}/${total}</b><span>câu đúng</span></div>
+          <div class="stat"><b>${pct}%</b><span>chính xác</span></div>
+        </div>
+        <p class="muted">${msg}</p>
+        ${missed ? `<h2>Những câu cần nghe lại</h2><ul class="misslist">${missed}</ul>` : ''}
+        ${transcript}
+        <div class="row wrap"><button class="btn primary" id="l-again">Làm lượt khác</button><button class="btn" id="l-hub">Chọn bài nghe khác</button></div>
+      </section>`;
+    view.onclick = onListenClick;
+    L.cur = null;
+  }
+
+  function renderListen() {
+    L = null;
+    const { level, rate } = lsetting();
+    const st = Store.get().listen || {};
+    const lvChips = LISTEN_LEVELS.map((k) => `<button class="chip" data-llv="${k}" aria-pressed="${level === k}">${k === 'all' ? 'Tất cả cấp' : (Data.LEVELS.find((l) => l.key === k) || {}).name}</button>`).join('');
+    const rateChips = LISTEN_RATES.map(([v, n]) => `<button class="chip" data-lrate="${v}" aria-pressed="${String(rate) === v}">${n}</button>`).join('');
+    const cards = LISTEN_MODES.map((m, i) => {
+      const s = st[m.key];
+      return `<button class="lmode" data-lmode="${m.key}" ${TTS.ok ? '' : 'disabled'}>
+        <span class="lmode-i" aria-hidden="true">${m.icon}</span>
+        <span class="lmode-b"><b>${i + 1}. ${esc(m.name)}</b><span class="muted">${esc(m.desc)}</span>
+        <small class="muted">${s && s.n ? `Đã làm ${s.n} câu, đúng ${Math.round((s.ok / s.n) * 100)}%` : 'Chưa làm lần nào'}</small></span></button>`;
+    }).join('');
+    view.innerHTML = `
+      <section class="page-h"><h1>Nghe</h1><p class="muted">Luyện nghe từ dễ đến khó. Mỗi lượt 10 câu, nghe lại không giới hạn.</p></section>
+      ${TTS.ok ? '' : '<p class="notice">Trình duyệt này không hỗ trợ đọc to nên không luyện nghe được. Hãy dùng Chrome, Edge hoặc Safari.</p>'}
+      <section class="card">
+        <h2>Cấp độ</h2><div class="chips" id="l-levels">${lvChips}</div>
+        <h2>Tốc độ nghe</h2><div class="chips" id="l-rates">${rateChips}</div>
+        <p class="hint">Mới bắt đầu? Chọn <b>A0</b> và đi theo thứ tự 1 đến 7. Nghe chưa rõ thì dùng nút “Nghe chậm”, phím tắt: P nghe, S nghe chậm, 1 đến 4 chọn đáp án, Enter tiếp tục.</p>
+      </section>
+      <div class="lmodes">${cards}</div>
+      <section class="card">
+        <h2>Phát âm: cặp âm dễ nhầm</h2>
+        <p class="muted">Luyện phân biệt ship và sheep, light và right, think và sink…</p>
+        <a class="btn" href="#sound">Mở luyện phát âm</a>
+      </section>`;
+    view.onclick = (e) => {
+      const lv = e.target.closest('[data-llv]');
+      if (lv) { Store.settings.listenLevel = lv.dataset.llv; Store.save(); return renderListen(); }
+      const rt = e.target.closest('[data-lrate]');
+      if (rt) { Store.settings.listenRate = parseFloat(rt.dataset.lrate); Store.save(); return renderListen(); }
+      const md = e.target.closest('[data-lmode]');
+      if (md && !md.disabled) startListen(md.dataset.lmode);
+    };
+  }
+
   /* ================= PHÁT ÂM: cặp âm dễ nhầm ================= */
   let sq = { group: 'all', cur: null, picked: null, score: 0, total: 0, streak: 0 };
 
@@ -698,6 +1139,7 @@
           <div class="pair-w"><b>${esc(p[2])}</b><span class="ipa">/${esc(p[3])}/</span><button class="icon-btn sm" data-say="${esc(p[2])}" aria-label="Nghe ${esc(p[2])}">🔊</button></div>
         </div>`).join('')}</div></section>`).join('');
     view.innerHTML = `
+      <a class="back" href="#listen">‹ Trang Nghe</a>
       <section class="page-h"><h1>Phát âm</h1><p class="muted">Luyện phân biệt các cặp âm dễ nhầm với người Việt. Phiên âm theo IPA Anh–Mỹ. Giọng đọc do trình duyệt tạo ra, nên hãy nghe thêm nguồn khác nếu thấy khó phân biệt.</p></section>
       <section class="card">
         <div class="card-h"><h2>Luyện tai</h2><select id="pq-group" class="input" aria-label="Chọn cặp âm">${gOpts}</select></div>
@@ -1064,7 +1506,7 @@
   function renderReadDetail(t) {
     rd = { text: t, mode: 'read', showAll: false };
     const ts = Store.textState(t.id);
-    const vocab = textVocab(t).filter((w) => w.level !== 'A1' || t.level === 'A1').slice(0, 30);
+    const vocab = textVocab(t).filter((w) => (w.level !== 'A1' && w.level !== 'A0') || t.level === 'A1' || t.level === 'A0').slice(0, 30);
     const vocabHTML = vocab.map((w) => `<div class="vrow"><b>${esc(w.word)}</b><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<span class="vi">${esc(w.vi)}</span>${lvBadge(w.level)}<button class="icon-btn sm" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button></div>`).join('');
     view.innerHTML = `
       <a class="back" href="#read">‹ Danh sách bài</a>
@@ -1215,7 +1657,7 @@
       </section>
       <section class="card">
         <h2>Về hiuhf0</h2>
-        <p class="muted">${Data.words.length} từ vựng (A1: ${Data.words.filter((w) => w.level === 'A1').length}, A2: ${Data.words.filter((w) => w.level === 'A2').length}, B1: ${Data.words.filter((w) => w.level === 'B1').length}). Cấp độ A1 đến B1 được phân loại theo khung CEFR một cách tương đối, dựa trên mức độ phổ biến và độ khó khi học.</p>
+        <p class="muted">${Data.words.length} từ vựng (A0: ${Data.words.filter((w) => w.level === 'A0').length}, A1: ${Data.words.filter((w) => w.level === 'A1').length}, A2: ${Data.words.filter((w) => w.level === 'A2').length}, B1: ${Data.words.filter((w) => w.level === 'B1').length}). Cấp độ A0 đến B1 được phân loại theo khung CEFR một cách tương đối, dựa trên mức độ phổ biến và độ khó khi học.</p>
       </section>`;
 
     const num = (v, lo, hi, d) => { const n = parseInt(v, 10); return isNaN(n) ? d : Math.max(lo, Math.min(hi, n)); };
@@ -1272,6 +1714,6 @@
   if (Data.warnings.length) console.warn('[hiuhf0] Cảnh báo dữ liệu:', Data.warnings);
   applyTheme();
   window.addEventListener('hashchange', route);
-  window.hiuhf0 = { Data, Store, SRS, session: () => S };
+  window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L };
   route();
 })();

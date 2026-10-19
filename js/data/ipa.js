@@ -1,7 +1,8 @@
 /* hiuhf0 — phiên âm IPA (Anh–Mỹ), dạng  từ|IPA. Khóa dạng từ~loại-từ dùng cho từ đồng tự khác âm.
  * Nguồn: open-dict-data/ipa-dict (MIT), đã chuẩn hóa ký hiệu; có chỉnh tay một số từ. */
 window.IPA_RAW = `
-a lot|ˈeɪ ˈlɑt
+a|eɪ
+a lot|eɪ ˈlɑt
 about|əˈbaʊt
 abroad|əˈbrɔd
 absent|ˈæbsənt
@@ -48,9 +49,11 @@ already|ɔˈrɛdi
 also|ˈɔlsoʊ
 although|ˌɔlˈðoʊ
 always|ˈɔlˌweɪz
+am|æm
 ambitious|æmˈbɪʃəs
 among|əˈməŋ
 amusing|əmˈjuzɪŋ
+an|æn
 ancestor|ˈænˌsɛstɝ
 ancient|ˈeɪnʃənt
 and|ˈænd
@@ -74,6 +77,7 @@ application|ˌæpləˈkeɪʃən
 apply|əˈplaɪ
 appointment|əˈpɔɪntmənt
 april|ˈeɪprəl
+are|ɑr
 argue|ˈɑrgju
 arm|ˈɑrm
 around|ɝˈaʊn
@@ -127,6 +131,7 @@ bed|ˈbɛd
 bedroom|ˈbɛˌdrum
 bee|ˈbi
 beef|ˈbif
+been|bɪn
 beer|ˈbɪr
 before|ˌbiˈfɔr
 behind|bɪˈhaɪnd
@@ -197,6 +202,7 @@ butterfly|ˈbətɝˌflaɪ
 button|ˈbətən
 buy|ˈbaɪ
 by|ˈbaɪ
+bye|baɪ
 cafe|kæˈfeɪ
 cake|ˈkeɪk
 calendar|ˈkæləndɝ
@@ -207,6 +213,7 @@ camera|ˈkæmɝə
 camp|ˈkæmp
 campaign|kæmˈpeɪn
 camping|ˈkæmpɪŋ
+can|kæn
 cancel|ˈkænsəl
 candidate|ˈkændədeɪt
 cap|ˈkæp
@@ -308,6 +315,7 @@ corner|ˈkɔrnɝ
 correct|kɝˈɛkt
 cost|ˈkɑst
 cough|ˈkɑf
+could|kʊd
 count|ˈkaʊnt
 country|ˈkəntri
 countryside|ˈkəntriˌsaɪd
@@ -339,6 +347,7 @@ customer|ˈkəstəmɝ
 customer service|ˈkəstəmɝ ˈsɝvəs
 customs|ˈkəstəmz
 cycling|ˈsaɪkəlɪŋ
+dad|dæd
 daily|ˈdeɪli
 damage|ˈdæmədʒ
 dance|ˈdæns
@@ -382,6 +391,7 @@ develop|dɪˈvɛləp
 device|dɪˈvaɪs
 diagnose|ˌdaɪəgˈnoʊs
 dictionary|ˈdɪkʃəˌnɛri
+did|dɪd
 die|ˈdaɪ
 diet|ˈdaɪət
 difference|ˈdɪfɝəns
@@ -407,6 +417,7 @@ dizzy|ˈdɪzi
 do|ˈdu
 doctor|ˈdɑktɝ
 documentary|ˌdɑkjəˈmɛnɝi
+does|dəz
 dog|ˈdɔg
 dollar|ˈdɑlɝ
 door|ˈdɔr
@@ -442,6 +453,8 @@ efficient|ɪˈfɪʃənt
 effort|ˈɛfɝt
 egg|ˈɛg
 eight|ˈeɪt
+eighteen|ˈeɪˈtin
+eighty|ˈeɪti
 election|ɪˈlɛkʃən
 elephant|ˈɛləfənt
 eleven|ˈilɛvən
@@ -484,6 +497,8 @@ example|ɪgˈzæmpəl
 exchange|ɪksˈtʃeɪndʒ
 excited|ɪkˈsaɪtəd
 exciting|ɪkˈsaɪtɪŋ
+excuse|ɪkˈskjus
+excuse me|ɪkˈskjus ˈmi
 exercise|ˈɛksɝˌsaɪz
 exercise book|ˈɛksɝˌsaɪz ˈbʊk
 exhausted|ɪgˈzɔstɪd
@@ -521,6 +536,8 @@ fertile|ˈfɝtəl
 festival|ˈfɛstəvəl
 fever|ˈfivɝ
 field|ˈfild
+fifteen|ˈfɪfˈtin
+fifth|ˈfɪfθ
 fifty|ˈfɪfti
 file|ˈfaɪl
 fill|ˈfɪl
@@ -560,7 +577,10 @@ forest|ˈfɔrəst
 forget|fɝˈgɛt
 forgive|fɝˈgɪv
 fork|ˈfɔrk
+forty|ˈfɔrti
 four|ˈfɔr
+fourteen|ˈfɔrˈtin
+fourth|ˈfɔrθ
 free|ˈfri
 freedom|ˈfridəm
 freeze|ˈfriz
@@ -607,6 +627,10 @@ goal|ˈgoʊl
 goat|ˈgoʊt
 gold|ˈgoʊld
 good|ˈgʊd
+good afternoon|ˈgʊd ˌæftɝˈnun
+good evening|ˈgʊd ˈivnɪŋ
+good morning|ˈgʊd ˈmɔrnɪŋ
+good night|ˈgʊd ˈnaɪt
 goodbye|ˌgʊdˈbaɪ
 goods|ˈgʊdz
 govern|ˈgəvɝn
@@ -618,6 +642,7 @@ grandmother|ˈgrændˌməðɝ
 grape|ˈgreɪp
 grass|ˈgræs
 grateful|ˈgreɪtfəl
+gray|ˈgreɪ
 great|ˈgreɪt
 green|ˈgrin
 grey|ˈgreɪ
@@ -631,6 +656,7 @@ guitar|gɪˈtɑr
 gym|ˈdʒɪm
 habit|ˈhæbət
 habitat|ˈhæbəˌtæt
+had|hæd
 hair|ˈhɛr
 half|ˈhæf
 hand|ˈhænd
@@ -643,9 +669,12 @@ hard|ˈhɑrd
 hardly|ˈhɑrdli
 hardware|ˈhɑrdˌwɛr
 harvest|ˈhɑrvəst
+has|hæz
 hat|ˈhæt
 hate|ˈheɪt
 have|ˈhæv
+have a nice day|ˈhæv eɪ ˈnaɪs ˈdeɪ
+he|ˈhi
 head|ˈhɛd
 headache|ˈhɛˌdeɪk
 headline|ˈhɛdˌlaɪn
@@ -658,11 +687,15 @@ heavy|ˈhɛvi
 hello|həˈloʊ
 help|ˈhɛlp
 helpful|ˈhɛlpfəl
+her|ˈhɝ
 here|ˈhir
+hi|haɪ
 high|ˈhaɪ
 hiking|ˈhaɪkɪŋ
 hill|ˈhɪl
+him|ˈhɪm
 hire|ˈhaɪɝ
+his|ˈhɪz
 history|ˈhɪstɝi
 hobby|ˈhɑbi
 hold|ˈhoʊld
@@ -680,6 +713,9 @@ hotel|hoʊˈtɛl
 hour|ˈaʊɝ
 house|ˈhaʊs
 how|ˈhaʊ
+how are you|ˈhaʊ ɑr ˈju
+how much is it|ˈhaʊ ˈmətʃ ɪz ˈɪt
+how old are you|ˈhaʊ ˈoʊld ɑr ˈju
 however|ˌhaʊˈɛvɝ
 huge|ˈhjudʒ
 humble|ˈhəmbəl
@@ -687,6 +723,11 @@ hundred|ˈhəndɝd
 hungry|ˈhəŋgri
 hurt|ˈhɝt
 husband|ˈhəzbənd
+i|aɪ
+i am fine|aɪ æm ˈfaɪn
+i am sorry|aɪ æm ˈsɑri
+i do not know|aɪ ˈdu ˈnɑt ˈnoʊ
+i do not understand|aɪ ˈdu ˈnɑt ˌəndɝˈstænd
 ice|ˈaɪs
 ice cream|ˈaɪs ˈkrim
 idea|aɪˈdiə
@@ -730,9 +771,12 @@ into|ˈɪntu
 introduce|ˌɪntrəˈdus
 invest|ˌɪnˈvɛst
 invite|ˌɪnˈvaɪt
+is|ɪz
 island|ˈaɪlənd
 issue|ˈɪʃu
+it|ˈɪt
 itinerary|aɪˈtɪnɝˌɛri
+its|ˈɪts
 jacket|ˈdʒækət
 january|ˈdʒænjuˌɛri
 jealous|ˈdʒɛləs
@@ -779,6 +823,7 @@ leaf|ˈlif
 learn|ˈlɝn
 leave|ˈliv
 lecture|ˈlɛktʃɝ
+left|ˈlɛft
 leg|ˈlɛg
 lemon|ˈlɛmən
 lend|ˈlɛnd
@@ -836,6 +881,7 @@ mature|məˈtʃʊr
 may|ˈmeɪ
 maybe|ˈmeɪbi
 mayor|ˈmeɪɝ
+me|ˈmi
 meal|ˈmil
 mean|ˈmin
 meanwhile|ˈminˌwaɪl
@@ -849,6 +895,7 @@ mention|ˈmɛnʃən
 menu|ˈmɛnju
 message|ˈmɛsədʒ
 method|ˈmɛθəd
+might|maɪt
 milk|ˈmɪlk
 million|ˈmɪljən
 minor|ˈmaɪnɝ
@@ -858,6 +905,7 @@ miss|ˈmɪs
 mix|ˈmɪks
 mobile phone|ˈmoʊbəl ˈfoʊn
 modern|ˈmɑdɝn
+mom|mɑm
 monday|ˈmənˌdeɪ
 money|ˈməni
 monkey|ˈməŋki
@@ -877,10 +925,15 @@ mouse|ˈmaʊs
 mouth|ˈmaʊθ
 move|ˈmuv
 movie|ˈmuvi
+mr|ˈmɪstɝ
+mrs|ˈmɪsəz
+ms|ˈmɪz
 much|ˈmətʃ
 muscle|ˈməsəl
 museum|ˈmjuziəm
 music|ˈmjuzɪk
+must|məst
+my|ˈmaɪ
 name|ˈneɪm
 narrow|ˈnæroʊ
 national|ˈnæʃənəl
@@ -904,9 +957,13 @@ newspaper|ˈnuzˌpeɪpɝ
 next|ˈnɛks
 next to|ˈnɛks ˈtu
 nice|ˈnaɪs
+nice to meet you|ˈnaɪs ˈtu ˈmit ˈju
 night|ˈnaɪt
 nine|ˈnaɪn
+nineteen|ˈnaɪnˈtin
+ninety|ˈnaɪnti
 no|ˈnoʊ
+no problem|ˈnoʊ ˈprɑbləm
 noodle|ˈnudəl
 noon|ˈnun
 nose|ˈnoʊz
@@ -916,6 +973,7 @@ notebook|ˈnoʊtˌbʊk
 notice|ˈnoʊtəs
 novel|ˈnɑvəl
 november|noʊˈvɛmbɝ
+now|ˈnaʊ
 nurse|ˈnɝs
 nut|ˈnət
 nutrition|nuˈtrɪʃən
@@ -923,10 +981,13 @@ o'clock|əˈklɑk
 obvious|ˈɑbviəs
 october|ɑkˈtoʊbɝ
 of|ˈəv
+of course|ˈəv ˈkɔrs
+off|ˈɔf
 offer|ˈɔfɝ
 office|ˈɔfɪs
 often|ˈɔfən
 oil|ˈɔɪl
+okay|ˌoʊˈkeɪ
 old|ˈoʊld
 on|ˈɑn
 once|ˈwəns
@@ -950,6 +1011,8 @@ original|ɝˈɪdʒənəl
 orphan|ˈɔrfən
 other|ˈəðɝ
 otherwise|ˈəðɝˌwaɪz
+our|ˈaʊɝ
+out|ˈaʊt
 outside|ˈaʊtˈsaɪd
 oven|ˈəvən
 over|ˈoʊvɝ
@@ -1082,6 +1145,7 @@ push|ˈpʊʃ
 put|ˈpʊt
 quality|ˈkwɑləti
 quantity|ˈkwɑntəti
+quarter|ˈkwɔrtɝ
 queen|ˈkwin
 question|ˈkwɛstʃən
 quiet|ˈkwaɪət
@@ -1182,6 +1246,7 @@ sausage|ˈsɔsədʒ
 save|ˈseɪv
 saving|ˈseɪvɪŋ
 say|ˈseɪ
+say it again|ˈseɪ ˈɪt əˈgeɪn
 scarf|ˈskɑrf
 scenic|ˈsinɪk
 schedule|ˈskɛdʒul
@@ -1196,6 +1261,7 @@ second|ˈsɛkənd
 second-hand|ˈsɛkənd ˈhænd
 secretary|ˈsɛkrəˌtɛri
 see|ˈsi
+see you later|ˈsi ˈju ˈleɪtɝ
 selfish|ˈsɛlfɪʃ
 sell|ˈsɛl
 send|ˈsɛnd
@@ -1205,8 +1271,11 @@ separate|ˈsɛpɝˌeɪt
 september|sɛpˈtɛmbɝ
 serious|ˈsɪriəs
 seven|ˈsɛvən
+seventeen|ˈsɛvənˈtin
+seventy|ˈsɛvəni
 share|ˈʃɛr
 sharp|ˈʃɑrp
+she|ˈʃi
 sheep|ˈʃip
 shelf|ˈʃɛlf
 shift|ˈʃɪft
@@ -1219,6 +1288,7 @@ shop assistant|ˈʃɑp əˈsɪstənt
 shopping|ˈʃɑpɪŋ
 short|ˈʃɔrt
 shorts|ˈʃɔrts
+should|ʃʊd
 shoulder|ˈʃoʊldɝ
 shout|ˈʃaʊt
 show|ˈʃoʊ
@@ -1237,9 +1307,12 @@ sincere|sɪnˈsɪr
 sing|ˈsɪŋ
 singer|ˈsɪŋɝ
 single|ˈsɪŋgəl
+sir|ˈsɝ
 sister|ˈsɪstɝ
 sit|ˈsɪt
 six|ˈsɪks
+sixteen|ˈsɪkˈstin
+sixty|ˈsɪksti
 size|ˈsaɪz
 skill|ˈskɪl
 skin|ˈskɪn
@@ -1276,6 +1349,7 @@ soup|ˈsup
 sour|ˈsaʊɝ
 souvenir|ˌsuvəˈnɪr
 speak|ˈspik
+speak slowly|ˈspik ˈsloʊli
 special|ˈspɛʃəl
 species|ˈspiʃiz
 spell|ˈspɛl
@@ -1302,6 +1376,7 @@ stop|ˈstɑp
 storm|ˈstɔrm
 story|ˈstɔri
 stove|ˈstoʊv
+straight|ˈstreɪt
 strange|ˈstreɪndʒ
 stranger|ˈstreɪndʒɝ
 strawberry|ˈstrɔˌbɛri
@@ -1371,18 +1446,30 @@ terrible|ˈtɛrəbəl
 test|ˈtɛst
 text|ˈtɛkst
 textbook|ˈtɛkstˌbʊk
+than|ðæn
+thank|ˈθæŋk
+thank you|ˈθæŋk ˈju
 thanks|ˈθæŋks
+that|ˈðæt
+the|ðə
 theatre|ˈθiətɝ
+their|ˈðɛr
+them|ðɛm
 then|ˈðɛn
 there|ˈðɛr
 therefore|ˈðɛrˌfɔr
+these|ˈðiz
+they|ˈðeɪ
 thick|ˈθɪk
 thief|ˈθif
 thin|ˈθɪn
 think|ˈθɪŋk
 third|ˈθɝd
 thirsty|ˈθɝsti
+thirteen|ˈθɝˈtin
 thirty|ˈθɝˌdi
+this|ˈðɪs
+those|ˈðoʊz
 though|ˈðoʊ
 thoughtful|ˈθɔtfəl
 thousand|ˈθaʊzən
@@ -1465,6 +1552,7 @@ up|ˈəp
 update|ˈəpˌdeɪt
 upload|ˈəˌploʊd
 upset|ˈəpˌsɛt
+us|əs
 use|ˈjus
 useful|ˈjusfəl
 username|ˈjuzɝˌneɪm
@@ -1499,12 +1587,14 @@ want|ˈwɑnt
 war|ˈwɔr
 warm|ˈwɔrm
 warn|ˈwɔrn
+was|wɑz
 wash|ˈwɑʃ
 washing machine|ˈwɑʃɪŋ məˈʃin
 waste|ˈweɪst
 watch|ˈwɑtʃ
 water|ˈwɔtɝ
 wave|ˈweɪv
+we|ˈwi
 weak|ˈwik
 wear|ˈwɛr
 weather|ˈwɛðɝ
@@ -1515,25 +1605,31 @@ wednesday|ˈwɛnzˌdeɪ
 week|ˈwik
 weekend|ˈwiˌkɛnd
 weekly|ˈwikli
+welcome|ˈwɛlkəm
+were|wɝ
 wet|ˈwɛt
-whale|ˈhweɪl
-what|ˈhwət
-whatever|ˌhwəˈtɛvɝ
-when|ˈhwɛn
-whenever|hwɛˈnɛvɝ
-where|ˈhwɛr
-whether|ˈhwɛðɝ
-which|ˈhwɪtʃ
-while|ˈhwaɪl
-white|ˈhwaɪt
+whale|ˈweɪl
+what|ˈwət
+what is your name|ˈwət ɪz ˈjɔr ˈneɪm
+whatever|ˌwəˈtɛvɝ
+when|ˈwɛn
+whenever|wɛˈnɛvɝ
+where|ˈwɛr
+where are you from|ˈwɛr ɑr ˈju ˈfrəm
+whether|ˈwɛðɝ
+which|ˈwɪtʃ
+while|ˈwaɪl
+white|ˈwaɪt
 who|ˈhu
 whoever|huˈɛvɝ
 whole|ˈhoʊl
-why|ˈhwaɪ
+whose|huz
+why|ˈwaɪ
 wide|ˈwaɪd
 widow|ˈwɪdoʊ
 wife|ˈwaɪf
 wildlife|ˈwaɪldˌlaɪf
+will|wɪl
 willing|ˈwɪlɪŋ
 win|ˈwɪn
 wind|ˈwaɪnd
@@ -1560,6 +1656,7 @@ workplace|ˈwɝkˌpleɪs
 world|ˈwɝld
 worried|ˈwɝid
 worry|ˈwɝi
+would|wʊd
 write|ˈraɪt
 wrong|ˈrɔŋ
 year|ˈjɪr
@@ -1567,7 +1664,10 @@ yellow|ˈjɛloʊ
 yes|ˈjɛs
 yesterday|ˈjɛstɝˌdeɪ
 yet|ˈjɛt
+you|ˈju
+you are welcome|ˈju ɑr ˈwɛlkəm
 young|ˈjəŋ
+your|ˈjɔr
 zero|ˈziroʊ
 zip|ˈzɪp
 zoo|ˈzu
@@ -1580,4 +1680,7 @@ graduate~v|ˈgrædʒuˌeɪt
 separate~adj|ˈsɛprət
 increase~v|ɪnˈkris
 refuse~v|rɪˈfjuz
+left~adj|ˈlɛft
+excuse~v|ɪkˈskjuz
+thank~v|ˈθæŋk
 `;

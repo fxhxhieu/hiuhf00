@@ -7,9 +7,10 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 - **Học kiểu Mochi, hệ thống tự xếp cấp**: không cần chọn bộ thẻ. Từ mới đi qua ba bước: lật thẻ, Nghe & chọn, Nghe & viết. Mỗi từ tự được xếp vào cấp 0 đến 5 (Mới, Mới gặp, Nhận ra, Nhớ được, Vững, Thuộc lòng) theo kết quả bài tập.
 - **Trang chính**: nút **Ôn tập ngay**, **Học từ mới**, **Học thêm 10 từ mới**, biểu đồ phân bố cấp thuộc. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (nhảy thẳng lên cấp 5, phím tắt 1 và 2).
 - **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Làm sai thì từ xuống cấp và quay lại sớm, khoảng cách giảm một nửa.
-- **1.594 từ vựng** chia theo cấp độ A1 (602 từ), A2 (518 từ), B1 (474 từ) và 20 chủ đề. Mỗi từ có loại từ, nghĩa tiếng Việt, định nghĩa Anh–Anh và câu ví dụ.
+- **1.694 từ vựng** chia theo cấp độ A0 Nhập môn (100 từ: đại từ, mạo từ, động từ to be, trợ động từ, số 13 đến 90, mẫu câu chào hỏi), A1 (602 từ), A2 (518 từ), B1 (474 từ) và 22 chủ đề. Mỗi từ có loại từ, nghĩa tiếng Việt, định nghĩa Anh–Anh và câu ví dụ.
 - **Thư viện từ**: tìm theo tiếng Anh hoặc tiếng Việt, lọc theo cấp độ CEFR, chủ đề, cấp thuộc; ưu tiên học một từ hoặc đánh dấu "đã nhớ rõ".
-- **Phiên âm IPA (Anh–Mỹ)** cho cả 1.594 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
+- **Phiên âm IPA (Anh–Mỹ)** cho cả 1.694 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
+- **Nghe** (7 chế độ, mỗi lượt 10 câu, chọn cấp A0 đến B1 và tốc độ): nghe và chọn nghĩa, nghe và viết từ, nghe số và giá tiền (phân biệt 13/30, số điện thoại), nghe giờ (chọn đồng hồ), nghe và sắp xếp câu, nghe và chép câu (chấm từng từ), nghe hiểu hội thoại (2 giọng, có câu hỏi cho 18 bài). Có nghe chậm, phím tắt, thống kê từng chế độ.
 - **Phát âm**: 13 nhóm cặp âm dễ nhầm (ship/sheep, light/right, think/sink…) kèm IPA, nghe từng từ và bài **Luyện tai** (nghe rồi chọn từ đúng).
 - **Từ khó**: tự gom những từ bạn từng quên, luyện riêng 20 từ mỗi lượt; có bộ lọc “Từ khó” và lọc theo loại từ trong thư viện.
 - **Mục tiêu hôm nay** hiện ngay ở trang chính.
@@ -48,7 +49,9 @@ js/
   data.js      đọc và lập chỉ mục dữ liệu từ vựng
   data/
     vocab-a1-1.js … vocab-b1-2.js   từ vựng
-    texts.js                         bài shadowing / dịch bài
+    vocab-a0.js                      từ nhập môn A0
+    texts.js, texts-a0.js            bài shadowing / dịch bài
+    quiz.js                          câu hỏi nghe hiểu cho từng bài
     ipa.js                           phiên âm IPA từng từ (từ|IPA)
     pairs.js                         cặp âm dễ nhầm
 ```
