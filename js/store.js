@@ -7,18 +7,16 @@ const Store = (() => {
   const DEFAULTS = {
     newPerDay: 10,
     reviewsPerDay: 200,
-    mode: 'mix',        // mix | flip | choice | type | listen
-    front: 'en',        // en | vi | mix  (mặt trước của flashcard)
     autoSpeak: true,
-    newOrder: 'order',  // order | random
+    goal: 'general',    // general | ielts | toeic: mục tiêu quyết định từ mới nào được học trước
+    onboarded: false,   // đã qua màn chào mừng đầu tiên chưa
     voice: '',
     rate: 0.9,
-    theme: 'auto',      // auto | light | dark
-    deck: { levels: ['A1'], topics: [] }
+    theme: 'auto'       // auto | light | dark
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 } });
+  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 }, usage: { total: 0, days: {} }, custom: [] });
 
   function normalize(o) {
     const b = blank();
@@ -33,11 +31,17 @@ const Store = (() => {
     if (o.flagged && typeof o.flagged === 'object') b.flagged = o.flagged;
     if (o.speak && typeof o.speak === 'object') Object.assign(b.speak, o.speak);
     if (o.daily && typeof o.daily === 'object') Object.assign(b.daily, o.daily);
+    if (Array.isArray(o.custom)) {
+      const s = (v, n) => String(v == null ? '' : v).slice(0, n);
+      b.custom = o.custom.filter((c) => c && c.word && c.vi && c.pos).map((c) => ({ word: s(c.word, 40), pos: s(c.pos, 8), vi: s(c.vi, 200), def: s(c.def, 300), ex: s(c.ex, 300) }));
+    }
+    if (o.usage && typeof o.usage === 'object') {
+      b.usage.total = Number(o.usage.total) || 0;
+      if (o.usage.days && typeof o.usage.days === 'object') b.usage.days = o.usage.days;
+    }
     if (o.settings && typeof o.settings === 'object') {
       Object.assign(b.settings, o.settings);
-      b.settings.deck = Object.assign({ levels: ['A1'], topics: [] }, o.settings.deck || {});
-      if (!Array.isArray(b.settings.deck.levels) || !b.settings.deck.levels.length) b.settings.deck.levels = ['A1'];
-      if (!Array.isArray(b.settings.deck.topics)) b.settings.deck.topics = [];
+      ['deck', 'mode', 'front', 'newOrder'].forEach((k) => { delete b.settings[k]; }); // thiết lập cũ không còn dùng
     }
     return b;
   }
@@ -75,9 +79,23 @@ const Store = (() => {
     if (isNew) d.newDone += 1; else d.reviewDone += 1;
     const k = dayKey();
     const l = state.log[k] || (state.log[k] = { n: 0, r: 0, ok: 0 });
-    if (isNew) l.n += 1; else l.r += 1;
+    if (isNew) l.n += 1;
+    else { l.r += 1; l.rok = (l.rok || 0) + (ok ? 1 : 0); } // rok: số lượt ôn đúng (không tính lúc học từ mới)
     if (ok) l.ok += 1;
     save();
+  }
+
+  /** Tỉ lệ nhớ đúng khi ôn lại trong `days` ngày gần nhất (chỉ tính các ngày đã ghi trường rok). */
+  function retention(days = 14) {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    let r = 0, ok = 0;
+    for (let i = 0; i < days; i++) {
+      const l = state.log[dayKey(d.getTime())];
+      if (l && l.rok != null) { r += l.r; ok += l.rok; }
+      d.setDate(d.getDate() - 1);
+    }
+    return { reviews: r, correct: ok, pct: r ? Math.round((ok / r) * 100) : null };
   }
 
   /** Ghi kết quả một câu luyện nghe (tính vào chuỗi ngày học). */
@@ -106,6 +124,22 @@ const Store = (() => {
     return true;
   }
 
+  /** Cộng thời gian sử dụng (giây) vào hôm nay và tổng. */
+  function addUsage(sec) {
+    const k = dayKey();
+    state.usage.days[k] = (state.usage.days[k] || 0) + sec;
+    state.usage.total += sec;
+    save();
+  }
+  /** Tổng thời gian sử dụng (giây): hôm nay, 7 ngày gần nhất, toàn bộ. */
+  function usageStats() {
+    const u = state.usage, d = new Date();
+    d.setHours(12, 0, 0, 0);
+    let week = 0;
+    for (let i = 0; i < 7; i++) { week += u.days[dayKey(d.getTime())] || 0; d.setDate(d.getDate() - 1); }
+    return { today: u.days[dayKey()] || 0, week, total: u.total };
+  }
+
   function streak() {
     const d = new Date();
     d.setHours(12, 0, 0, 0);
@@ -129,7 +163,7 @@ const Store = (() => {
     card: (id) => state.cards[id] || null,
     setCard(id, c) { state.cards[id] = c; save(); },
     delCard(id) { delete state.cards[id]; save(); },
-    save, flush, daily, dayKey, logReview, logListen, flag, setPath, logSpeak, award, streak, textState,
+    save, flush, daily, dayKey, logReview, retention, logListen, flag, setPath, logSpeak, award, streak, textState, addUsage, usageStats,
     exportJSON() { return JSON.stringify(state, null, 2); },
     importJSON(text) {
       const o = JSON.parse(text);

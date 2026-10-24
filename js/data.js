@@ -36,12 +36,14 @@ const Data = (() => {
     { key: 'func', vi: 'Từ chức năng & trạng từ', icon: '🔗' },
     { key: 'abstract', vi: 'Khái niệm & ý tưởng', icon: '💡' },
     { key: 'ielts', vi: 'IELTS: từ học thuật thường gặp', icon: '🎯' },
-    { key: 'toeic', vi: 'TOEIC: công sở & kinh doanh', icon: '📈' }
+    { key: 'toeic', vi: 'TOEIC: công sở & kinh doanh', icon: '📈' },
+    { key: 'mine', vi: 'Từ của tôi', icon: '⭐' }
   ];
   const topicMap = {};
   TOPICS.forEach((t) => { topicMap[t.key] = t; });
 
   const levelIndex = (k) => LEVELS.findIndex((l) => l.key === k);
+  const idOf = (word, pos) => word.toLowerCase().replace(/\s+/g, '-') + '~' + pos;
   const ipaMap = {};
   String((typeof window !== 'undefined' && window.IPA_RAW) || '').split('\n').forEach((l) => {
     const i = l.indexOf('|');
@@ -73,7 +75,7 @@ const Data = (() => {
         return;
       }
       const w = { word: p[0], pos: p[1], vi: p[2], def: p[3], ex: p[4], level: block.level, topic };
-      w.id = w.word.toLowerCase().replace(/\s+/g, '-') + '~' + w.pos;
+      w.id = idOf(w.word, w.pos);
       if (byId.has(w.id)) { warnings.push('Trùng từ: ' + w.id); return; }
       w.ipa = ipaMap[w.id] || ipaMap[w.word.toLowerCase()] || '';
       w.emoji = emojiMap[w.id] || (w.pos === 'n' ? emojiMap[w.word.toLowerCase()] : '') || '';
@@ -89,6 +91,27 @@ const Data = (() => {
   // Chỉ mục tra từ (từ cấp thấp nhất được ưu tiên).
   const index = new Map();
   words.forEach((w) => { const k = w.word.toLowerCase(); if (!index.has(k)) index.set(k, w); });
+
+  /* Từ người học tự thêm (cấp 'MY', chủ đề 'mine'): nạp lại toàn bộ mỗi lần danh sách thay đổi.
+   * Không nằm trong bài lộ trình nào; ứng dụng tự ghim để được học sớm. */
+  function setCustom(list) {
+    for (let i = words.length - 1; i >= 0; i--) {
+      const w = words[i];
+      if (!w.custom) continue;
+      byId.delete(w.id);
+      if (index.get(w.word.toLowerCase()) === w) index.delete(w.word.toLowerCase());
+      words.splice(i, 1);
+    }
+    (list || []).forEach((c) => {
+      const w = { word: c.word, pos: c.pos, vi: c.vi, def: c.def || '', ex: c.ex || '', level: 'MY', topic: 'mine', custom: true, ipa: '', emoji: '' };
+      w.id = idOf(w.word, w.pos);
+      if (byId.has(w.id)) return;
+      w.ipa = ipaMap[w.id] || ipaMap[w.word.toLowerCase()] || '';
+      byId.set(w.id, w);
+      words.push(w);
+      if (!index.has(w.word.toLowerCase())) index.set(w.word.toLowerCase(), w);
+    });
+  }
 
   /* ----- Lộ trình: chia kho từ thành các bài nhỏ (mỗi bài khoảng 10 từ) ----- */
   const A0_UNITS = [
@@ -106,6 +129,7 @@ const Data = (() => {
   ];
   const units = [];
   const unitById = new Map();
+  const unitOfWord = new Map(); // id từ → bài lộ trình chứa từ đó
   (function buildUnits() {
     const a0 = words.filter((w) => w.level === 'A0');
     const byText = new Map();
@@ -128,7 +152,7 @@ const Data = (() => {
         chunks.forEach((c, k) => units.push({ id: l.key.toLowerCase() + '-' + t.key + '-' + (k + 1), level: l.key, topic: t.key, title: t.vi + (chunks.length > 1 ? ' (' + (k + 1) + '/' + chunks.length + ')' : ''), icon: t.icon, ids: c.map((w) => w.id) }));
       });
     });
-    units.forEach((u, i) => { u.n = i + 1; unitById.set(u.id, u); });
+    units.forEach((u, i) => { u.n = i + 1; unitById.set(u.id, u); u.ids.forEach((id) => unitOfWord.set(id, u)); });
   })();
 
   function stems(t) {
@@ -163,5 +187,5 @@ const Data = (() => {
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, warnings };
 })();

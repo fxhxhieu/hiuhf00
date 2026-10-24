@@ -240,6 +240,8 @@ mark { background: color-mix(in srgb, var(--pink) 28%, transparent); color: inhe
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; }
 .stat b { display: block; font-size: 1.7rem; line-height: 1.1; }
 .stat span { color: var(--muted); font-size: .85rem; }
+#s-usage .stat { flex: 1 1 140px; }
+#s-usage .stat b { font-size: 1.2rem; }
 
 .lvbar { margin-bottom: 14px; }
 .lvbar-h { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 650; flex-wrap: wrap; }
@@ -524,3 +526,12 @@ mark { background: color-mix(in srgb, var(--pink) 28%, transparent); color: inhe
 .filters .input { max-width: 100%; }
 select.input { min-width: 0; flex: 1 1 150px; }
 .field.row input[type="checkbox"] { flex: none; width: 18px; height: 18px; margin-top: 2px; }
+
+/* ---- Chào mừng, nhắc sao lưu, từ của tôi ---- */
+#w-goal .chip { text-align: left; }
+#w-goal .chip small { display: block; margin: 2px 0 0; }
+.card.notice.backup { background: var(--b1-soft); border-color: transparent; }
+.backup p { margin: 0 0 10px; }
+.lv-MY { background: var(--brand-soft); color: var(--brand); }
+#my-add summary { cursor: pointer; }
+#my-add .form, .sheet .my-form { margin-top: 12px; display: grid; gap: 12px; }

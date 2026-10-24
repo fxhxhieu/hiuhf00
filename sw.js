@@ -1,5 +1,6 @@
-/* hiuhf0 — service worker: dùng offline. Ưu tiên mạng, mất mạng thì lấy bản đã lưu. */
-const CACHE = 'hiuhf0-v4';
+/* hiuhf0 — service worker: dùng offline. Ưu tiên mạng; mất mạng hoặc mạng quá chậm (4 giây) thì lấy bản đã lưu. */
+const CACHE = 'hiuhf0-v5';
+const NET_TIMEOUT = 4000;
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/data.js', 'js/store.js', 'js/srs.js', 'js/tts.js', 'js/app.js',
@@ -19,10 +20,16 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(
+  e.respondWith(new Promise((resolve) => {
+    // Mạng chậm: nếu đã có bản lưu thì dùng luôn, bản mới vẫn được tải ngầm cho lần sau
+    const timer = setTimeout(() => caches.match(req).then((r) => { if (r) resolve(r); }), NET_TIMEOUT);
     fetch(req).then((res) => {
+      clearTimeout(timer);
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
-      return res;
-    }).catch(() => caches.match(req).then((r) => r || caches.match('index.html')))
-  );
+      resolve(res);
+    }).catch(() => {
+      clearTimeout(timer);
+      caches.match(req).then((r) => resolve(r || caches.match('index.html')));
+    });
+  }));
 });

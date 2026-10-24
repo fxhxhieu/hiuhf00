@@ -14,10 +14,8 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const fold = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   const view = $('#view');
-  const GRADE_NAMES = ['Quên', 'Khó', 'Nhớ', 'Dễ'];
-  const STATUS = { new: 'Mới', learning: 'Đang học', mastered: 'Đã thuộc' };
   const topicOf = (k) => Data.topicMap[k] || { vi: k, icon: '•' };
-  const lvBadge = (l) => `<span class="lv lv-${esc(l)}">${esc(l)}</span>`;
+  const lvBadge = (l) => `<span class="lv lv-${esc(l)}">${l === 'MY' ? '⭐ Của tôi' : esc(l)}</span>`;
 
   let toastTimer;
   function toast(msg) {
@@ -41,6 +39,14 @@
   const cloze = (ex, word) => esc(markWord(ex, word, () => '_____'));
 
   const ipaHTML = (w) => (w && w.ipa && Store.settings.showIpa !== false ? `<span class="ipa" title="Phiên âm IPA (Anh–Mỹ)">/${esc(w.ipa)}/</span>` : '');
+  /* Kết quả một từ ở bài Nghe / Nói / Kiểm tra: đánh dấu từ khó, sai thì lịch ôn của từ đã thuộc cũng gần lại */
+  function skillResult(id, ok) {
+    Store.flag(id, ok ? -1 : 1);
+    if (ok) return;
+    const c = Store.card(id);
+    const p = SRS.penalize(c);
+    if (p !== c) Store.setCard(id, p);
+  }
   const isHard = (w) => { if (Store.get().flagged[w.id]) return true; const c = Store.card(w.id); return !!c && (c.lapses || 0) >= 1 && SRS.level(c) < 5; };
   const hardScore = (w) => { const c = Store.card(w.id); return ((c && c.lapses) || 0) + (Store.get().flagged[w.id] || 0) * 2; };
   const emojiHTML = (w) => (w && w.emoji && Store.settings.showEmoji !== false ? `<span class="emo" aria-hidden="true">${w.emoji}</span>` : '');
@@ -49,8 +55,8 @@
     return `<div class="info">
       ${showWord ? `<div class="i-word">${emojiHTML(w)}<span>${esc(w.word)}</span><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm từ ${esc(w.word)}">🔊</button></div>` : ''}
       <div class="i-vi">${esc(w.vi)}</div>
-      <div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div>
-      <div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div>
+      ${w.def ? `<div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div>` : ''}
+      ${w.ex ? `<div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div>` : ''}
     </div>`;
   }
 
@@ -70,8 +76,6 @@
   }
 
   /* ================= Bộ thẻ & trạng thái ================= */
-  function deckPool() { return Data.words; }
-  const statusOf = (w) => SRS.status(Store.card(w.id));
 
   function levelStats() {
     const cards = Store.get().cards;
@@ -84,13 +88,14 @@
   }
 
   /* ================= Định tuyến ================= */
-  const routes = { learn: renderLearn, library: renderLibrary, path: renderPath, listen: renderListen, speak: renderSpeak, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
+  const routes = { learn: renderLearn, library: renderLibrary, path: renderPath, placement: renderPlacement, listen: renderListen, speak: renderSpeak, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
   let currentRoute = 'learn';
   let S = null; // phiên học
 
   function cleanup() {
     S = null;
     L = null;
+    PL = null;
     stopSpeak();
     stopShadow();
     closeSheet();
@@ -103,7 +108,12 @@
     const parts = (location.hash.replace(/^#\/?/, '') || 'learn').split('/');
     const name = routes[parts[0]] ? parts[0] : 'learn';
     currentRoute = name;
-    $$('.nav a').forEach((a) => { if (a.dataset.r === (name === 'sound' || name === 'speak' ? 'listen' : name)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('.nav a').forEach((a) => { if (a.dataset.r === (name === 'sound' || name === 'speak' ? 'listen' : name === 'placement' ? 'path' : name)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    if (name === 'learn' && !Store.settings.onboarded) {
+      // Người dùng cũ (đã có tiến độ) bỏ qua màn chào mừng
+      if (Object.keys(Store.get().cards).length) { Store.settings.onboarded = true; Store.save(); }
+      else { renderWelcome(); window.scrollTo(0, 0); return; }
+    }
     routes[name](parts[1]);
     window.scrollTo(0, 0);
   }
@@ -112,11 +122,11 @@
   const LEVEL_NAMES = SRS.LEVEL_NAMES;
   const LEVEL_HINTS = [
     'chưa học',
-    'đã lật thẻ, chờ bài Nghe & chọn',
-    'đã qua Nghe & chọn, chờ bài Nghe & viết',
-    'đã qua Nghe & viết, ôn lại trong vài ngày',
-    'nhớ được từ 7 ngày trở lên',
-    'nhớ từ 21 ngày trở lên, hoặc bạn đã bấm “Đã nhớ rõ từ”'
+    'đã lật thẻ, đang làm bài Nghe & chọn',
+    'đã qua Nghe & chọn, Nghe & viết; chờ ôn lại sau ít nhất 1 ngày',
+    'đã nhớ đúng khi ôn lại, khoảng cách dưới 7 ngày',
+    'khoảng cách từ 7 ngày trở lên, phải gõ ra khi ôn',
+    'từ 21 ngày và ôn đúng 2 lần liên tiếp, hoặc đã qua kiểm tra nhanh “Đã nhớ rõ từ”'
   ];
   const mvBadge = (lv) => `<span class="mv mv-${lv}">Cấp ${lv} · ${esc(LEVEL_NAMES[lv])}</span>`;
   const KIND_LABEL = { intro: 'Từ mới', lchoose: 'Nghe & chọn', ltype: 'Nghe & viết', choice: 'Chọn nghĩa', type: 'Gõ từ' };
@@ -154,9 +164,21 @@
       .map((w) => `<span class="hardw">${esc(w.word)}${w.ipa ? ` <small>/${esc(w.ipa)}/</small>` : ''}</span>`).join('');
 
     const title = due ? `${due} thẻ cần ôn ngay` : newLeft ? 'Chưa có thẻ cần ôn, học từ mới nhé' : 'Hôm nay bạn đã học xong';
+    // Thanh cấp 1–5 tính trên số từ đã học, để người mới không thấy toàn thanh trống
+    const learnedN = Math.max(1, total - counts[0]);
     const mrows = counts.map((n, lv) => `<div class="mrow">
         <div class="mrow-h">${mvBadge(lv)}<span class="muted">${esc(LEVEL_HINTS[lv])}</span><b>${n}</b></div>
-        <div class="progress sm mp-${lv}"><i style="width:${(n / total) * 100}%"></i></div></div>`).join('');
+        <div class="progress sm mp-${lv}"><i style="width:${(n / (lv === 0 ? total : learnedN)) * 100}%"></i></div></div>`).join('');
+
+    // Dự báo lịch ôn: hôm nay (kể cả quá hạn), ngày mai, 2 đến 7 ngày tới
+    const day0 = SRS.startOfDay(now), DAY = 86400000;
+    const fc = [0, 0, 0];
+    Data.words.forEach((w) => {
+      const c = cards[w.id];
+      if (!c) return;
+      if (c.due < day0 + DAY) fc[0] += 1; else if (c.due < day0 + 2 * DAY) fc[1] += 1; else if (c.due < day0 + 8 * DAY) fc[2] += 1;
+    });
+    const ret = Store.retention(14);
 
     const lvBars = lstats.map((l) => {
       const pm = (l.m / l.total) * 100, pl = (l.lr / l.total) * 100;
@@ -191,6 +213,8 @@
         <div class="streak" aria-label="Chuỗi ngày học liên tiếp"><b>${streak}</b><span>ngày liên tiếp</span></div>
       </section>
 
+      ${backupReminder()}
+
       ${pathCardHTML()}
 
       <section class="stats">
@@ -200,14 +224,25 @@
         <div class="stat"><b>${total}</b><span>từ trong kho</span></div>
       </section>
 
+      <section class="card" id="forecast">
+        <div class="card-h"><h2>Lịch ôn sắp tới</h2><span class="muted">dự báo số thẻ đến hạn</span></div>
+        <div class="stats">
+          <div class="stat"><b>${fc[0]}</b><span>hôm nay (gồm cả quá hạn)</span></div>
+          <div class="stat"><b>${fc[1]}</b><span>ngày mai</span></div>
+          <div class="stat"><b>${fc[2]}</b><span>trong 2 đến 7 ngày tới</span></div>
+          <div class="stat"><b>${ret.reviews >= 10 ? ret.pct + '%' : '–'}</b><span>nhớ đúng khi ôn (14 ngày qua)</span></div>
+        </div>
+        ${ret.reviews >= 10 ? '' : '<p class="hint">Tỉ lệ nhớ đúng sẽ hiện sau khi bạn ôn lại ít nhất 10 lượt.</p>'}
+      </section>
+
       <section class="card">
         <div class="card-h"><h2>Từ khó</h2><span class="muted">${hardList.length} từ hay sai</span></div>
         ${hardList.length ? `<p class="hint">Những từ bạn từng quên hoặc làm sai và chưa lên cấp 5. Luyện riêng để khắc phục.</p><div class="hardlist">${hardTop}</div><div class="row wrap"><button class="btn primary" id="hard">Luyện từ khó · ${Math.min(20, hardList.length)} từ</button></div>` : '<p class="muted">Chưa có từ khó nào. Những từ bạn làm sai sẽ được gom lại ở đây.</p>'}
       </section>
 
       <section class="card">
-        <div class="card-h"><h2>Cấp thuộc của từng từ</h2><span class="muted">tự động cập nhật</span></div>
-        <p class="hint">Mỗi từ đi qua ba bài: lật thẻ, nghe và chọn, nghe và viết. Làm đúng thì từ lên cấp, làm sai thì xuống cấp và quay lại sớm hơn. Từ nào bạn đã rõ, bấm “Đã nhớ rõ từ” để nhảy thẳng lên cấp 5.</p>
+        <div class="card-h"><h2>Cấp thuộc của từng từ</h2><span class="muted">cấp 1 đến 5 tính trên số từ đã học</span></div>
+        <p class="hint">Mỗi từ đi qua ba bài: lật thẻ, nghe và chọn, nghe và viết. Muốn lên cấp 3 trở lên, bạn phải nhớ đúng khi ôn lại sau ít nhất 1 ngày. Làm sai thì từ xuống cấp và quay lại sớm hơn; sai ở bài Nghe, Nói hay Kiểm tra cuối bài cũng kéo lịch ôn lại gần. Từ nào bạn đã rõ, bấm “Đã nhớ rõ từ” và gõ lại một lần để lên thẳng cấp 5.</p>
         ${mrows}
       </section>
 
@@ -226,6 +261,8 @@
     view.onclick = (e) => {
       const t = e.target.closest('button');
       if (!t || t.disabled) return;
+      if (t.id === 'backup-now') { exportBackup(); toast('Đã tải file sao lưu.'); return renderLearn(); }
+      if (t.id === 'backup-later') { Store.settings.backupSnooze = Date.now() + SNOOZE_DAYS * 86400000; Store.save(); return renderLearn(); }
       if (t.id === 'review') return startSession('review', 0);
       if (t.id === 'learnnew') return startSession('new', 0);
       if (t.id === 'more') return startSession('new', 10);
@@ -270,31 +307,73 @@
     }
 
     const newCount = Math.max(0, set.newPerDay - daily.newDone) + (extraNew || 0);
-    const ordered = [...fresh.filter((w) => pins[w.id]), ...fresh.filter((w) => !pins[w.id])];
+    const ordered = newWordsOrder(fresh);
     return { ids: [...learning, ...ordered.slice(0, newCount)].map((w) => w.id), early: false };
+  }
+
+  /* Thứ tự từ mới: từ được ghim trước, rồi đi đúng thứ tự bài trong Lộ trình.
+   * Mục tiêu IELTS / TOEIC: học nền tảng A0–A1 trước, sau đó ưu tiên từ của kỳ thi.
+   * Từ thuộc bài đã bỏ qua hoặc đã xếp trình độ được đẩy xuống cuối. */
+  function newWordsOrder(fresh) {
+    const pins = Store.get().pinned, path = Store.get().path, goal = Store.settings.goal;
+    const a2Start = (Data.units.find((u) => u.level === 'A2') || { n: 1 }).n;
+    const rank = (w) => {
+      if (pins[w.id]) return -1e6;
+      const u = Data.unitOfWord.get(w.id);
+      let r = u ? u.n : 1e4; // từ không thuộc bài nào (từ riêng của bạn) xếp sau cùng
+      if (u && (path[u.id] || {}).skipped) r += 5e3;
+      if (goal !== 'general' && w.topic === goal) r = Math.min(r, a2Start - 1 + r / 1e4);
+      return r;
+    };
+    return fresh.map((w, i) => [rank(w), i, w]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
   }
 
   function startSession(kind, extraNew) {
     const r = buildQueue(kind, extraNew || 0);
     if (!r.ids.length) { toast('Chưa có thẻ nào để học lúc này.'); return; }
     S = { queue: r.ids, total: r.ids.length, answered: 0, correct: 0, cur: null, kind };
-    if (r.early) toast('Chưa có thẻ đến hạn, mình cho bạn ôn trước 20 thẻ gần đến hạn nhất.');
+    if (r.early) toast('Chưa có thẻ đến hạn, mình cho bạn ôn trước 20 thẻ gần đến hạn nhất. Trả lời đúng sẽ không làm lịch ôn xa hơn, quên thì vẫn tính.');
     nextCard();
   }
 
-  /* Thang bài tập theo cấp: lật thẻ → nghe & chọn → nghe & viết → các bài ôn xen kẽ */
+  /* Thang bài tập: lật thẻ → nghe & chọn → nghe & viết (trong phiên), sau đó các bài ôn xen kẽ.
+   * Từ cấp 4 trở lên bắt buộc phải gõ ra, không còn trắc nghiệm. */
   function pickKind(c) {
     if (!c) return 'intro';
-    const lv = SRS.level(c);
     const r = (a) => a[Math.floor(Math.random() * a.length)];
     let k;
-    if (lv <= 1) k = 'lchoose';
-    else if (lv === 2) k = 'ltype';
-    else if (lv === 3) k = r(['choice', 'type', 'ltype']);
-    else if (lv === 4) k = r(['type', 'ltype', 'lchoose']);
-    else k = r(['type', 'ltype']);
+    if (c.state === 'learn') k = (c.step || 0) === 0 ? 'lchoose' : 'ltype';
+    else k = SRS.level(c) <= 3 ? r(['choice', 'type', 'ltype']) : r(['type', 'ltype']);
     if (!TTS.ok) { if (k === 'lchoose') k = 'choice'; if (k === 'ltype') k = 'type'; }
     return k;
+  }
+
+  /* Trả lời đúng nhờ nhận ra (trắc nghiệm) hoặc phải gõ lại lần hai thì khoảng cách tăng chậm hơn */
+  const isRecog = (cur) => cur.kind === 'lchoose' || cur.kind === 'choice' || !!cur.weak;
+
+  /* Biến thể chính tả Anh–Anh / Anh–Mỹ: gõ kiểu nào cũng được */
+  const VARIANTS = [['colour', 'color'], ['favourite', 'favorite'], ['neighbour', 'neighbor'], ['behaviour', 'behavior'], ['centre', 'center'], ['theatre', 'theater'], ['metre', 'meter'], ['organise', 'organize'], ['realise', 'realize'], ['recognise', 'recognize'], ['apologise', 'apologize'], ['analyse', 'analyze'], ['travelling', 'traveling'], ['cancelled', 'canceled'], ['grey', 'gray'], ['programme', 'program'], ['licence', 'license'], ['defence', 'defense'], ['catalogue', 'catalog'], ['dialogue', 'dialog'], ['honour', 'honor'], ['labour', 'labor'], ['flavour', 'flavor'], ['humour', 'humor'], ['jewellery', 'jewelry'], ['mum', 'mom']];
+  const variantOf = (s) => { for (const [a, b] of VARIANTS) { if (s === a) return b; if (s === b) return a; } return null; };
+
+  /* Sai đúng một ký tự (thiếu, thừa, nhầm hoặc đảo hai chữ liền nhau)? */
+  function oneEdit(a, b) {
+    if (a === b) return false;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0;
+    while (i < la && i < lb && a[i] === b[i]) i++;
+    if (la === lb) {
+      if (a.slice(i + 1) === b.slice(i + 1)) return true;
+      return a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2);
+    }
+    return la > lb ? a.slice(i + 1) === b.slice(i) : b.slice(i + 1) === a.slice(i);
+  }
+
+  /** 'ok' | 'near' (sai một ký tự ở từ từ 5 chữ cái trở lên) | 'bad' */
+  function judgeWord(typed, target) {
+    const a = norm(typed), b = norm(target);
+    if (a === b || variantOf(b) === a) return 'ok';
+    return b.length >= 5 && oneEdit(a, b) ? 'near' : 'bad';
   }
 
   function nextCard() {
@@ -324,14 +403,18 @@
     const now = Date.now();
     const lvNow = SRS.level(c);
     let next, sub;
-    if (cur.kind === 'intro') { next = SRS.introduce(now); sub = 'làm bài Nghe & chọn'; }
-    else { next = SRS.schedule(c, correct ? 2 : 0, now); sub = (correct ? 'ôn lại sau ' : 'học lại sau ') + SRS.label(next, now); }
+    if (cur.checkKnown) {
+      next = correct ? SRS.master(c, now) : SRS.introduce(now);
+      sub = correct ? 'xác nhận đã nhớ rõ, ôn lại sau ' + SRS.label(next, now) : 'chưa nhớ rõ, học từ này từ đầu';
+    } else if (cur.kind === 'intro') { next = SRS.introduce(now); sub = 'làm bài Nghe & chọn'; }
+    else { next = SRS.schedule(c, correct ? 2 : 0, now, { recog: isRecog(cur) }); sub = (correct ? 'ôn lại sau ' : 'học lại sau ') + SRS.label(next, now); }
     const lvNext = SRS.level(next);
     const known = SRS.master(c, now);
+    const knownSub = cur.kind === 'intro' ? 'gõ lại từ để xác nhận' : 'ôn lại sau ' + SRS.label(known, now);
     return `<div class="lvchg">${mvBadge(lvNow)}<span aria-hidden="true">›</span>${mvBadge(lvNext)}</div>
       <div class="act2">
         <button class="btn primary lg" data-act="continue"><span>Tiếp tục</span><small>${esc(sub)}</small><kbd>1</kbd></button>
-        ${correct ? `<button class="btn lg known" data-act="known"><span>Đã nhớ rõ từ</span><small>ôn lại sau ${esc(SRS.label(known, now))}</small><kbd>2</kbd></button>` : ''}
+        ${correct && !cur.checkKnown ? `<button class="btn lg known" data-act="known"><span>Đã nhớ rõ từ</span><small>${esc(knownSub)}</small><kbd>2</kbd></button>` : ''}
       </div>`;
   }
 
@@ -371,7 +454,7 @@
     const { w, flipped } = S.cur;
     const frontHTML = `${emojiHTML(w) ? `<div class="fc-emo">${emojiHTML(w)}</div>` : ''}<div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos)}</div>${ipaHTML(w) ? `<div class="fc-ipa">${ipaHTML(w)}</div>` : ''}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm">🔊</button>`;
     const backHTML = `<div class="fc-vi">${esc(w.vi)}</div>
-      <div class="fc-more"><div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div><div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div></div>`;
+      <div class="fc-more">${w.def ? `<div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div>` : ''}${w.ex ? `<div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div>` : ''}</div>`;
     $('#stage').innerHTML = `<div class="fc ${flipped ? 'flipped' : ''}" id="fc" role="button" tabindex="0" aria-label="Lật thẻ">
       <div class="fc-inner">
         <div class="fc-face fc-front">${frontHTML}<span class="fc-hint">Chạm để lật</span></div>
@@ -422,9 +505,10 @@
     const w = cur.w;
     const hint = `${w.word.length} chữ cái, bắt đầu bằng “${esc(w.word.charAt(0))}”`;
     let body = listen
-      ? `<div class="prompt"><button class="btn lg" data-say="${esc(w.word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(w.word)}" data-rate="0.55">🐢 Nghe chậm</button></div><p class="muted center">Nghe và viết lại từ bạn nghe được</p>`
+      ? `<div class="prompt"><button class="btn lg" data-say="${esc(w.word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(w.word)}" data-rate="0.55">🐢 Nghe chậm</button></div><p class="muted center">${cur.checkKnown ? 'Kiểm tra nhanh: nghe và gõ lại từ để xác nhận bạn đã nhớ rõ' : 'Nghe và viết lại từ bạn nghe được'}</p>`
       : `<div class="prompt"><div class="fc-vi">${esc(w.vi)}</div><div class="fc-pos">${esc(w.pos)}</div></div>
-         <p class="cloze">${cloze(w.ex, w.word)}</p><p class="muted center">Gõ từ tiếng Anh, ${hint}</p>`;
+         <p class="cloze">${cloze(w.ex, w.word)}</p><p class="muted center">${cur.checkKnown ? 'Kiểm tra nhanh: gõ từ tiếng Anh để xác nhận bạn đã nhớ rõ. ' : ''}Gõ từ tiếng Anh, ${hint}</p>`;
+    if (cur.near) body += '<p class="notice center">Gần đúng rồi! Kiểm tra lại chính tả và gõ lại nhé.</p>';
     if (!cur.answered) {
       body += `<form class="typebox" id="tf" autocomplete="off"><input id="ti" class="input lg" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Gõ từ tiếng Anh…" aria-label="Câu trả lời"><button class="btn primary" type="submit">Kiểm tra</button></form><button class="btn ghost sm center-btn" data-giveup="1">Mình không nhớ</button>`;
     } else {
@@ -442,11 +526,22 @@
     if (!S || !S.cur || S.cur.answered) return;
     const val = ($('#ti') || {}).value || '';
     if (!val.trim()) return;
-    S.cur.typed = val.trim();
-    S.cur.correct = norm(val) === norm(S.cur.w.word);
-    S.cur.answered = true;
-    stageType(S.cur.kind === 'ltype');
-    if (Store.settings.autoSpeak) TTS.speak(S.cur.w.word);
+    const cur = S.cur;
+    const verdict = judgeWord(val, cur.w.word);
+    cur.typed = val.trim();
+    if (verdict === 'near' && !cur.near) {
+      // Sai đúng một ký tự: cho gõ lại một lần, không tính là quên
+      cur.near = true;
+      stageType(cur.kind === 'ltype');
+      const ti = $('#ti');
+      if (ti) { ti.value = val.trim(); ti.select(); }
+      return;
+    }
+    cur.correct = verdict === 'ok';
+    cur.weak = cur.correct && cur.near; // phải gõ lại mới đúng: tính là đúng nhờ nhận ra
+    cur.answered = true;
+    stageType(cur.kind === 'ltype');
+    if (Store.settings.autoSpeak) TTS.speak(cur.w.word);
   }
 
   function onSessionClick(e) {
@@ -479,10 +574,19 @@
     const { w, c } = cur;
     if (act === 'known' && !(cur.kind === 'intro' ? cur.flipped : cur.correct)) return;
     if (act === 'continue' && cur.kind === 'intro' && !cur.flipped) return;
+    if (act === 'known' && cur.kind === 'intro') {
+      // Từ chưa học mà bấm "đã nhớ rõ": phải qua một câu nghe và gõ lại thì mới lên cấp 5
+      Object.assign(cur, { kind: TTS.ok ? 'ltype' : 'type', checkKnown: true, flipped: false, answered: false, correct: null, typed: '', near: false, weak: false });
+      return renderCard();
+    }
     const now = Date.now();
     let nc;
     let ok = true;
-    if (act === 'known') {
+    if (cur.checkKnown) {
+      ok = !!cur.correct;
+      nc = ok ? SRS.master(c, now) : SRS.introduce(now);
+      Store.logReview(true, ok);
+    } else if (act === 'known') {
       nc = SRS.master(c, now);
       Store.logReview(!c, true);
     } else if (cur.kind === 'intro') {
@@ -490,12 +594,17 @@
       Store.logReview(true, true);
     } else {
       ok = !!cur.correct;
-      nc = SRS.schedule(c, ok ? 2 : 0, now);
+      nc = SRS.schedule(c, ok ? 2 : 0, now, { recog: isRecog(cur) });
       Store.logReview(false, ok);
     }
     Store.setCard(w.id, nc);
     if (ok && Store.get().flagged[w.id]) Store.flag(w.id, -1);
-    if (cur.kind !== 'intro') { S.answered += 1; if (ok) S.correct += 1; }
+    if (cur.kind !== 'intro') {
+      S.answered += 1;
+      if (ok) S.correct += 1;
+      else (S.missed || (S.missed = [])).push(w);
+    }
+    if (SRS.level(nc) > SRS.level(c)) S.up = (S.up || 0) + 1;
     if (nc.state === 'learn') {
       const pos = cur.kind === 'intro' || nc.step === 0 ? Math.min(S.queue.length, 3) : S.queue.length;
       S.queue.splice(pos, 0, w.id);
@@ -507,20 +616,25 @@
     const answered = S.answered;
     const acc = answered ? Math.round((S.correct / answered) * 100) : 0;
     const back = S.back || '';
+    const up = S.up || 0;
+    const missed = Array.from(new Map((S.missed || []).map((w) => [w.id, w])).values());
     S = null;
     checkBadges();
     const cards = Store.get().cards;
     const fresh = Data.words.filter((w) => !cards[w.id]).length;
     const counts = masteryCounts();
+    const missHTML = missed.map((w) => `<li><b>${esc(w.word)}</b> ${ipaHTML(w)} · ${esc(w.vi)} <button class="icon-btn sm" data-say="${esc(w.word)}" aria-label="Nghe">🔊</button></li>`).join('');
     view.innerHTML = `
       <section class="card summary">
         <h1>Xong phiên học</h1>
         <div class="stats">
           <div class="stat"><b>${answered}</b><span>bài đã làm</span></div>
           <div class="stat"><b>${answered ? acc + '%' : '–'}</b><span>làm đúng</span></div>
+          <div class="stat"><b>${up}</b><span>lượt lên cấp</span></div>
           <div class="stat"><b>${counts[5]}</b><span>từ thuộc lòng</span></div>
         </div>
         <p class="muted">Các thẻ sẽ quay lại đúng lúc bạn sắp quên. Từ làm sai sẽ quay lại sau vài phút.</p>
+        ${missHTML ? `<h2>Những từ cần chú ý</h2><ul class="misslist">${missHTML}</ul>` : ''}
         <div class="row wrap">
           <button class="btn primary" id="back-home">${back ? 'Quay lại bài' : 'Về trang học'}</button>
           ${back ? '' : `<button class="btn" id="more-new" ${fresh ? '' : 'disabled'}>Học thêm 10 từ mới</button>`}
@@ -563,6 +677,45 @@
   const lib = { level: 'all', topic: 'all', mv: 'all', pos: 'all', q: '', limit: 120 };
   const POS_NAMES = { n: 'Danh từ', v: 'Động từ', adj: 'Tính từ', adv: 'Trạng từ', pron: 'Đại từ', det: 'Từ hạn định', prep: 'Giới từ', conj: 'Liên từ', num: 'Số từ', int: 'Thán từ', phr: 'Cụm từ' };
 
+  /* ----- Từ của tôi: người học tự thêm từ gặp ngoài đời ----- */
+  function customFormHTML(word) {
+    const posOpts = Object.keys(POS_NAMES).map((p) => `<option value="${p}">${esc(POS_NAMES[p])} (${p})</option>`).join('');
+    return `<form class="form my-form" id="my-form" autocomplete="off">
+      <label class="field"><span>Từ hoặc cụm từ tiếng Anh</span><input class="input" name="word" required maxlength="40" value="${esc(word || '')}" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span>Loại từ</span><select class="input" name="pos">${posOpts}</select></label>
+      <label class="field"><span>Nghĩa tiếng Việt</span><input class="input" name="vi" required maxlength="200"></label>
+      <label class="field"><span>Câu ví dụ (không bắt buộc)</span><input class="input" name="ex" maxlength="300"></label>
+      <div class="row wrap"><button class="btn primary" type="submit">Lưu từ</button></div>
+    </form>`;
+  }
+
+  function addCustomWord(f) {
+    const word = String(f.word || '').trim().replace(/\s+/g, ' ');
+    const vi = String(f.vi || '').trim();
+    const pos = POS_NAMES[f.pos] ? f.pos : 'n';
+    if (!/^[A-Za-z][A-Za-z' -]{0,39}$/.test(word)) { toast('Từ tiếng Anh chỉ gồm chữ cái, dấu cách, dấu nháy và dấu gạch ngang.'); return false; }
+    if (!vi) { toast('Hãy nhập nghĩa tiếng Việt.'); return false; }
+    const id = Data.idOf(word, pos);
+    if (Data.byId.has(id)) { toast('Từ này đã có trong kho.'); return false; }
+    const st = Store.get();
+    st.custom.push({ word, pos, vi, def: '', ex: String(f.ex || '').trim() });
+    Data.setCustom(st.custom);
+    st.pinned[id] = 1; // học sớm
+    Store.save();
+    toast('Đã thêm. Từ này sẽ được học sớm.');
+    return true;
+  }
+
+  function removeCustomWord(w) {
+    const st = Store.get();
+    st.custom = st.custom.filter((c) => Data.idOf(c.word, c.pos) !== w.id);
+    delete st.pinned[w.id];
+    delete st.flagged[w.id];
+    Store.delCard(w.id);
+    Data.setCustom(st.custom);
+    Store.save();
+  }
+
   function libFiltered() {
     const raw = lib.q.trim().toLowerCase();
     const q = fold(raw);
@@ -596,6 +749,7 @@
           <button class="btn sm" data-act="pin">${pinned ? 'Bỏ ưu tiên' : 'Ưu tiên học từ này'}</button>
           <button class="btn sm" data-act="known">Đã nhớ rõ từ này</button>
           <button class="btn sm ghost" data-act="reset">Đặt lại tiến độ</button>
+          ${w.custom ? '<button class="btn sm danger" data-act="delete">Xóa từ này</button>' : ''}
         </div>
       </div>
     </article>`;
@@ -618,6 +772,7 @@
     const posOpts = ['<option value="all">Mọi loại từ</option>'].concat(posKeys.map((p) => `<option value="${esc(p)}" ${lib.pos === p ? 'selected' : ''}>${esc(POS_NAMES[p] || p)} (${esc(p)})</option>`)).join('');
     view.innerHTML = `
       <section class="page-h"><h1>Từ vựng</h1><p class="muted">${Data.words.length} từ, mỗi từ có nghĩa tiếng Việt, định nghĩa Anh–Anh và câu ví dụ.</p></section>
+      <details class="card" id="my-add"><summary><b>＋ Thêm từ của tôi</b></summary><p class="hint">Gặp từ mới ngoài đời? Thêm vào đây để học cùng kho từ. Từ sẽ được học sớm nhất.</p>${customFormHTML('')}</details>
       <section class="card filters">
         <input id="q" class="input" type="search" placeholder="Tìm từ tiếng Anh hoặc nghĩa tiếng Việt…" value="${esc(lib.q)}" aria-label="Tìm từ">
         <div class="chips" id="f-level">${lvOpts}</div>
@@ -628,6 +783,11 @@
       <div class="center"><button class="btn" id="lib-more" hidden>Xem thêm</button></div>`;
     updateLib();
 
+    view.onsubmit = (e) => {
+      if (e.target.id !== 'my-form') return;
+      e.preventDefault();
+      if (addCustomWord(Object.fromEntries(new FormData(e.target)))) { Object.assign(lib, { level: 'all', topic: 'mine', mv: 'all', pos: 'all', q: '', limit: 120 }); renderLibrary(); }
+    };
     view.oninput = (e) => { if (e.target.id === 'q') { lib.q = e.target.value; lib.limit = 120; updateLib(); } };
     view.onchange = (e) => {
       if (e.target.id === 'f-topic') { lib.topic = e.target.value; lib.limit = 120; updateLib(); }
@@ -648,6 +808,12 @@
         if (a === 'pin') { const p = Store.get().pinned; if (p[w.id]) delete p[w.id]; else p[w.id] = 1; Store.save(); toast(p[w.id] ? 'Từ này sẽ được học sớm.' : 'Đã bỏ ưu tiên.'); }
         if (a === 'known') { Store.setCard(w.id, SRS.markKnown()); toast('Đã đưa từ lên cấp 5.'); }
         if (a === 'reset') { Store.delCard(w.id); toast('Đã đặt lại tiến độ của từ này.'); }
+        if (a === 'delete' && w.custom) {
+          if (!confirm('Xóa từ này khỏi “Từ của tôi”? Tiến độ học của từ cũng mất.')) return;
+          removeCustomWord(w);
+          toast('Đã xóa từ.');
+          return updateLib();
+        }
         row.outerHTML = rowHTML(w, true);
         if (lib.mv !== 'all') updateLib();
         return;
@@ -708,6 +874,7 @@
           <div class="progress sm"><i style="width:${Math.round((done / total) * 100)}%"></i></div></div>
         ${nu ? `<a class="btn primary lg" href="#path/${nu.id}">Vào học bài này</a>` : ''}
       </section>
+      <p class="hint">Chưa chắc nên bắt đầu từ đâu? <a href="#placement">Làm bài xếp trình độ</a> để bỏ qua những bài bạn đã biết.</p>
       ${levels}`;
     view.onclick = (e) => {
       const a = e.target.closest('[data-locked]');
@@ -738,7 +905,7 @@
         </ol>
         <div class="row wrap">
           ${next ? `<a class="btn ${done ? 'primary' : ''}" href="#path/${next.id}">Bài tiếp theo ›</a>` : ''}
-          ${done ? '' : '<button class="btn ghost sm" data-p="skip">Mình đã biết hết, bỏ qua bài này</button>'}
+          ${done ? '' : `<button class="btn ghost sm" data-p="skip">${TTS.ok ? 'Mình đã biết hết, kiểm tra ngay' : 'Mình đã biết hết, bỏ qua bài này'}</button>`}
         </div>
       </section>
       <section class="card"><div class="card-h"><h2>Từ trong bài</h2><span class="muted">${ws.length} từ</span></div><div class="vlist">${rows}</div></section>`;
@@ -751,6 +918,8 @@
       if (p === 'test') return startListen('test', { words: ws, unit: u, back });
       if (p === 'speak') return startSpeak(ws, 'Bài ' + u.n + ': ' + u.title, back, u);
       if (p === 'skip') {
+        // Có giọng đọc thì phải qua bài kiểm tra (từ 70%) mới được bỏ qua; không có thì đành tin người học
+        if (TTS.ok) return startListen('test', { words: ws, unit: u, back, skip: true });
         if (!confirm('Đánh dấu bài này là đã hoàn thành mà không kiểm tra?')) return;
         Store.setPath(u.id, { test: 100, skipped: true });
         checkBadges();
@@ -807,8 +976,8 @@
       mastered,
       streak: Store.streak(),
       listenN: Object.keys(st.listen).reduce((a, k) => a + (st.listen[k].n || 0), 0),
-      units: Data.units.filter(unitDone).length,
-      a0Done: a0.length > 0 && a0.every(unitDone),
+      units: Data.units.filter((u) => unitDone(u) && !unitState(u).placed).length, // bài được bỏ qua nhờ xếp trình độ không tính huy hiệu
+      a0Done: a0.length > 0 && a0.every((u) => unitDone(u) && !unitState(u).placed),
       speakN: st.speak.n,
       speakOk: st.speak.ok
     };
@@ -981,7 +1150,7 @@
   function spRecord(it, ok) {
     SP.results[SP.i] = ok;
     Store.logSpeak(ok);
-    if (it.id) Store.flag(it.id, ok ? -1 : 1);
+    if (it.id) skillResult(it.id, ok);
   }
 
   function onSpeakClick(e) {
@@ -1253,6 +1422,7 @@
     L.picked = null;
     L.built = [];
     L.hint = false;
+    L.near = false;
     L.typed = '';
     drawListenQ();
     if (L.cur.type !== 'dialog') TTS.speak(L.cur.say, { rate: L.rate });
@@ -1291,7 +1461,7 @@
       stage = `${listenAudio(q.say)}<p class="muted center">Nghe và chọn hình đúng</p><div class="options pics">${items}</div>${done ? `<div class="card reveal">${infoHTML(q.w)}</div>` : ''}`;
     } else if (q.type === 'spell') {
       const hint = L.hint ? `<p class="muted center">Gợi ý: ${q.w.word.length} chữ cái, bắt đầu bằng “${esc(q.w.word.charAt(0))}”</p>` : '';
-      stage = `${listenAudio(q.say)}<p class="muted center">Nghe và viết lại từ bạn nghe được</p>${hint}`;
+      stage = `${listenAudio(q.say)}<p class="muted center">Nghe và viết lại từ bạn nghe được</p>${hint}${L.near && !done ? '<p class="notice center">Gần đúng rồi! Kiểm tra lại chính tả và gõ lại nhé.</p>' : ''}`;
       if (!done) stage += typeFormHTML('Gõ từ tiếng Anh…', '<button class="btn ghost sm" data-l="hint">Gợi ý</button>');
       else stage += `<div class="result ${q.ok ? 'ok' : 'bad'}">${q.ok ? 'Chính xác' : `Chưa đúng. Đáp án: <b>${esc(q.w.word)}</b>`}${L.typed && !q.ok ? `<small>Bạn gõ: ${esc(L.typed)}</small>` : ''}</div><div class="card reveal">${infoHTML(q.w)}</div>`;
     } else if (q.type === 'sentence') {
@@ -1339,7 +1509,7 @@
     if (ok) L.score += 1;
     else L.missed.push(q);
     Store.logListen(L.mode, ok);
-    if (q.w) { Store.flag(q.w.id, ok ? -1 : 1); if (!ok) L.flagged.add(q.w.id); }
+    if (q.w) { skillResult(q.w.id, ok); if (!ok) L.flagged.add(q.w.id); }
     drawListenQ();
   }
 
@@ -1348,7 +1518,11 @@
     L.typed = val.trim();
     if (!L.typed) return;
     let ok = false;
-    if (q.type === 'spell') ok = norm(L.typed) === norm(q.w.word);
+    if (q.type === 'spell') {
+      const v = judgeWord(L.typed, q.w.word);
+      if (v === 'near' && !L.near) { L.near = true; return drawListenQ(); } // sai đúng một ký tự: cho gõ lại một lần
+      ok = v === 'ok';
+    }
     else if (q.type === 'sentence') { const a = wordsOf(q.s.en), b = wordsOf(L.typed); ok = a.length === b.length && a.every((x, i) => x === b[i]); }
     else if (q.type === 'number') {
       const clean = L.typed.replace(/[\s,\-$]/g, '');
@@ -1452,8 +1626,8 @@
     if (unit) {
       if (mode === 'test') {
         const prev = unitState(unit).test || 0;
-        Store.setPath(unit.id, { test: Math.max(prev, pct) });
         const passed = pct >= PASS_PCT;
+        Store.setPath(unit.id, Object.assign({ test: Math.max(prev, pct) }, passed && L.opts.skip ? { skipped: true } : {}));
         const nx = Data.units[Data.units.indexOf(unit) + 1];
         unitMsg = passed ? `<div class="result ok">Bạn đã qua bài ${unit.n}!${nx ? ' Bài tiếp theo đã được mở.' : ''}</div>` : `<div class="result bad">Cần đạt ${PASS_PCT}% để qua bài. Hãy ôn lại các từ sai rồi thử lại.</div>`;
         if (passed && nx) nextId = nx.id;
@@ -2045,13 +2219,24 @@
          <div class="row wrap"><button class="btn sm" id="sheet-pin">${pinned ? 'Bỏ ghim khỏi bộ thẻ' : 'Ghim vào bộ thẻ học'}</button></div>`
       : `<div class="i-word"><span>${esc(token)}</span><button class="icon-btn" data-say="${esc(token)}" aria-label="Phát âm">🔊</button></div>
          <p class="muted">Từ này chưa có trong kho của hiuhf0.</p>
-         <a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(token.toLowerCase())}">Tra trên Cambridge</a>`;
+         <div class="row wrap"><button class="btn sm primary" id="sheet-add">＋ Thêm vào từ của tôi</button><a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(token.toLowerCase())}">Tra trên Cambridge</a></div>`;
     sheetEl = document.createElement('div');
     sheetEl.className = 'sheet-backdrop';
     sheetEl.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Tra từ"><button class="icon-btn sheet-x" id="sheet-x" aria-label="Đóng">✕</button>${inner}</div>`;
     document.body.appendChild(sheetEl);
+    sheetEl.addEventListener('submit', (e) => {
+      if (e.target.id !== 'my-form') return;
+      e.preventDefault();
+      if (addCustomWord(Object.fromEntries(new FormData(e.target)))) closeSheet();
+    });
     sheetEl.addEventListener('click', (e) => {
       if (e.target === sheetEl || e.target.id === 'sheet-x') return closeSheet();
+      if (e.target.id === 'sheet-add') {
+        sheetEl.querySelector('.sheet').innerHTML = `<button class="icon-btn sheet-x" id="sheet-x" aria-label="Đóng">✕</button><h2>Thêm vào từ của tôi</h2>${customFormHTML(token)}`;
+        const vi = sheetEl.querySelector('[name="vi"]');
+        if (vi) vi.focus();
+        return;
+      }
       if (e.target.id === 'sheet-pin' && w) {
         const p = Store.get().pinned;
         if (p[w.id]) delete p[w.id]; else p[w.id] = 1;
@@ -2064,7 +2249,185 @@
   }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
 
+  /* ================= CHÀO MỪNG & XẾP TRÌNH ĐỘ ================= */
+  const GOALS = [
+    ['general', 'Giao tiếp hằng ngày', 'đi theo lộ trình A0 đến B1'],
+    ['ielts', 'Thi IELTS', 'học nền tảng, rồi ưu tiên từ học thuật'],
+    ['toeic', 'Thi TOEIC', 'học nền tảng, rồi ưu tiên từ công sở']
+  ];
+  const PER_DAY = [5, 10, 20, 30];
+  const PL_PER_LEVEL = 5; // số câu mỗi cấp
+  const PL_PASS = 4;      // đúng từ 4/5 câu thì qua cấp
+  let PL = null;
+
+  function renderWelcome() {
+    const s = Store.settings;
+    view.innerHTML = `
+      <section class="page-h"><h1>Chào mừng đến với hiuhf0</h1><p class="muted">Chọn mục tiêu để mình sắp xếp từ mới cho phù hợp. Bạn có thể đổi lại trong Cài đặt bất cứ lúc nào.</p></section>
+      <section class="card">
+        <h2>Mục tiêu của bạn</h2>
+        <div class="chips" id="w-goal">${GOALS.map(([k, n, d]) => `<button class="chip" data-goal="${k}" aria-pressed="${s.goal === k}">${esc(n)}<small>${esc(d)}</small></button>`).join('')}</div>
+        <h2>Mỗi ngày học bao nhiêu từ mới?</h2>
+        <div class="chips" id="w-per">${PER_DAY.map((n) => `<button class="chip" data-per="${n}" aria-pressed="${s.newPerDay === n}">${n} từ</button>`).join('')}</div>
+      </section>
+      <section class="card">
+        <h2>Bạn đang ở trình độ nào?</h2>
+        <p class="muted">Làm bài xếp trình độ khoảng 3 phút (tối đa 20 câu) để bỏ qua những phần bạn đã biết. Hoặc bắt đầu từ đầu với cấp A0.</p>
+        <div class="row wrap"><button class="btn primary lg" data-w="placement">Xếp trình độ cho mình</button><button class="btn lg" data-w="start">Bắt đầu từ A0</button></div>
+        <p class="hint">Đã dùng hiuhf0 ở máy khác? Vào <a href="#settings">Cài đặt</a> để nhập file sao lưu.</p>
+      </section>`;
+    view.onclick = (e) => {
+      const g = e.target.closest('[data-goal]');
+      if (g) { s.goal = g.dataset.goal; Store.save(); $$('#w-goal .chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.goal === s.goal)); return; }
+      const p = e.target.closest('[data-per]');
+      if (p) { s.newPerDay = +p.dataset.per; Store.save(); $$('#w-per .chip').forEach((c) => c.setAttribute('aria-pressed', +c.dataset.per === s.newPerDay)); return; }
+      const b = e.target.closest('[data-w]');
+      if (!b) return;
+      s.onboarded = true;
+      Store.save();
+      if (b.dataset.w === 'placement') location.hash = '#placement'; else goBack('#learn');
+    };
+  }
+
+  function renderPlacement() {
+    PL = null;
+    view.innerHTML = `
+      <a class="back" href="#path">‹ Lộ trình</a>
+      <section class="card">
+        <h1>Xếp trình độ</h1>
+        <p class="muted">Mỗi cấp A0, A1, A2, B1 có ${PL_PER_LEVEL} câu: bạn đọc một từ rồi chọn nghĩa đúng. Đúng từ ${PL_PASS}/${PL_PER_LEVEL} câu thì qua cấp đó và sang cấp tiếp theo. Không chắc thì chọn “Mình không biết” cho khỏi đoán mò. Tối đa ${PL_PER_LEVEL * Data.LEVELS.length} câu, khoảng 3 phút.</p>
+        <p class="hint">Kết quả chỉ để gợi ý bỏ qua những bài bạn đã biết. Bạn vẫn học lại được bất kỳ bài nào sau đó.</p>
+        <div class="row wrap"><button class="btn primary lg" id="pl-start">Bắt đầu</button></div>
+      </section>`;
+    view.onclick = (e) => { if (e.target.closest('#pl-start')) startPlacement(); };
+  }
+
+  function startPlacement() {
+    const qs = [];
+    Data.LEVELS.forEach((l) => {
+      const pool = Data.words.filter((w) => w.level === l.key && w.pos !== 'phr' && w.word.indexOf(' ') < 0 && (l.key !== 'A0' || ['n', 'v', 'adj', 'adv', 'pron', 'num'].indexOf(w.pos) >= 0));
+      sampleN(pool, PL_PER_LEVEL).forEach((w) => {
+        const o = shuffle([w, ...distractors(w, pool)]);
+        qs.push({ lv: l.key, w, opts: o.map((x) => x.vi), a: o.indexOf(w) });
+      });
+    });
+    PL = { qs, i: 0, score: {} };
+    drawPlacement();
+  }
+
+  function drawPlacement() {
+    const q = PL.qs[PL.i];
+    const pct = Math.round((PL.i / PL.qs.length) * 100);
+    view.innerHTML = `
+      <section class="session">
+        <div class="s-top"><button class="icon-btn" id="pl-exit" aria-label="Thoát">✕</button><div class="progress"><i style="width:${pct}%"></i></div><span class="s-count">${PL.i + 1}/${PL.qs.length}</span></div>
+        <div class="s-counts"><span class="s-meta">Xếp trình độ</span></div>
+        <div id="stage">
+          <div class="prompt"><div class="fc-word">${esc(q.w.word)}</div><div class="fc-pos">${esc(q.w.pos)}</div>${ipaHTML(q.w)}<button class="icon-btn" data-say="${esc(q.w.word)}" aria-label="Phát âm">🔊</button></div>
+          <p class="muted center">Chọn nghĩa đúng</p>
+          <div class="options">${q.opts.map((o, i) => `<button class="opt" data-pl="${i}"><span>${esc(o)}</span></button>`).join('')}</div>
+          <button class="btn ghost sm center-btn" data-pl="-1">Mình không biết</button>
+        </div>
+      </section>`;
+    view.onclick = onPlacementClick;
+  }
+
+  function onPlacementClick(e) {
+    if (!PL || e.target.closest('[data-say]')) return;
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.id === 'pl-exit') { if (confirm('Thoát bài xếp trình độ?')) { PL = null; location.hash = '#path'; } return; }
+    if (b.dataset.pl == null) return;
+    const q = PL.qs[PL.i];
+    if (+b.dataset.pl === q.a) PL.score[q.lv] = (PL.score[q.lv] || 0) + 1;
+    PL.i += 1;
+    // Hết một cấp mà chưa đạt thì dừng, các cấp cao hơn chỉ khó hơn
+    if (PL.i >= PL.qs.length || (PL.i % PL_PER_LEVEL === 0 && (PL.score[q.lv] || 0) < PL_PASS)) return finishPlacement();
+    drawPlacement();
+  }
+
+  function finishPlacement() {
+    const rows = Data.LEVELS.map((l) => ({ l, n: PL.score[l.key] || 0, asked: PL.qs.slice(0, PL.i).filter((q) => q.lv === l.key).length }));
+    let passed = 0;
+    while (passed < rows.length && rows[passed].asked >= PL_PER_LEVEL && rows[passed].n >= PL_PASS) passed += 1;
+    const next = Data.LEVELS[passed];
+    const skipped = Data.LEVELS.slice(0, passed).map((l) => l.key);
+    PL = null;
+    Store.settings.onboarded = true;
+    Store.save();
+    const msg = !passed ? 'Bạn nên bắt đầu từ cấp A0 để vững nền tảng.'
+      : next ? `Bạn đã vững ${skipped.join(', ')}. Nên bắt đầu từ ${next.name}.`
+        : 'Bạn đã qua cả bốn cấp trong kho từ. Hãy dùng Lộ trình để ôn lại, hoặc chọn mục tiêu IELTS, TOEIC trong Cài đặt.';
+    view.innerHTML = `
+      <section class="card summary">
+        <h1>Kết quả xếp trình độ</h1>
+        <div class="stats">${rows.map((r) => `<div class="stat"><b>${r.asked ? r.n + '/' + r.asked : '–'}</b><span>${lvBadge(r.l.key)}</span></div>`).join('')}</div>
+        <p class="muted">${esc(msg)}</p>
+        <div class="row wrap">
+          ${passed ? `<button class="btn primary" id="pl-apply">Bỏ qua các bài ${esc(skipped.join(', '))}${next ? ' và bắt đầu từ ' + esc(next.key) : ''}</button><button class="btn" id="pl-keep">Giữ nguyên, học từ A0</button>` : '<button class="btn primary" id="pl-keep">Bắt đầu từ A0</button>'}
+        </div>
+        ${passed ? '<p class="hint">Các từ của bài bị bỏ qua sẽ được đẩy xuống cuối hàng đợi từ mới, bạn vẫn học lại được bất cứ lúc nào trong Lộ trình hoặc Thư viện.</p>' : ''}
+      </section>`;
+    view.onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.id === 'pl-apply') {
+        let n = 0;
+        Data.units.forEach((u) => { if (skipped.indexOf(u.level) >= 0 && !unitDone(u)) { Store.setPath(u.id, { test: 100, skipped: true, placed: true }); n += 1; } });
+        toast(`Đã bỏ qua ${n} bài.`);
+      }
+      if (b.id === 'pl-apply' || b.id === 'pl-keep') goBack('#learn');
+    };
+  }
+
+  /* ================= SAO LƯU ================= */
+  const BACKUP_DAYS = 7;
+  const SNOOZE_DAYS = 3;
+
+  function exportBackup() {
+    const blob = new Blob([Store.exportJSON()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hiuhf0-backup-' + Store.dayKey() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    Store.settings.lastBackup = Date.now();
+    Store.save();
+  }
+
+  /* Nhắc sao lưu khi đã có tiến độ đáng kể và quá 7 ngày chưa sao lưu (bấm "Để sau" thì nhắc lại sau 3 ngày) */
+  function backupReminder() {
+    const s = Store.settings, now = Date.now();
+    if (Object.keys(Store.get().cards).length < 20) return '';
+    if (s.backupSnooze && now < s.backupSnooze) return '';
+    const days = s.lastBackup ? Math.floor((now - s.lastBackup) / 86400000) : -1;
+    if (days >= 0 && days < BACKUP_DAYS) return '';
+    return `<section class="card notice backup">
+      <p><b>Nhớ sao lưu tiến độ.</b> ${days < 0 ? 'Bạn chưa sao lưu lần nào.' : `Lần sao lưu cuối cách đây ${days} ngày.`} Dữ liệu chỉ nằm trong trình duyệt này, xóa dữ liệu trình duyệt hoặc đổi máy là mất hết.</p>
+      <div class="row wrap"><button class="btn primary sm" id="backup-now">Sao lưu ngay</button><button class="btn ghost sm" id="backup-later">Để sau ${SNOOZE_DAYS} ngày</button></div>
+    </section>`;
+  }
+
   /* ================= CÀI ĐẶT ================= */
+  const fmtDur = (sec) => {
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    return h ? `${h} giờ ${m} phút` : m ? `${m} phút` : `${sec % 60} giây`;
+  };
+  function usageHTML() {
+    const u = Store.usageStats();
+    return [['Hôm nay', u.today], ['7 ngày qua', u.week], ['Tổng cộng', u.total]]
+      .map(([l, v]) => `<div class="stat"><b>${fmtDur(v)}</b><span class="muted">${l}</span></div>`).join('');
+  }
+
+  /* Bộ đếm thời gian sử dụng: chỉ tính khi tab đang hiển thị và có thao tác trong 2 phút gần nhất */
+  let lastAct = Date.now();
+  ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((ev) => window.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true, capture: true }));
+  setInterval(() => {
+    if (document.visibilityState !== 'visible' || Date.now() - lastAct > 120000) return;
+    Store.addUsage(1);
+    if (currentRoute === 'settings') { const el = document.getElementById('s-usage'); if (el) el.innerHTML = usageHTML(); }
+  }, 1000);
+
   function renderSettings() {
     const s = Store.settings;
     const sel = (cur, arr) => arr.map(([v, l]) => `<option value="${v}" ${String(cur) === v ? 'selected' : ''}>${l}</option>`).join('');
@@ -2074,6 +2437,8 @@
       <section class="page-h"><h1>Cài đặt</h1><p class="muted">Mọi thiết lập và tiến độ học được lưu ngay trong trình duyệt này.</p></section>
       <section class="card form">
         <h2>Học tập</h2>
+        <label class="field"><span>Mục tiêu học</span><select class="input" id="s-goal">${sel(s.goal, GOALS.map(([k, n]) => [k, n]))}</select></label>
+        <p class="hint">Quyết định từ mới nào được học trước. <a href="#placement">Làm bài xếp trình độ</a> để bỏ qua những bài bạn đã biết.</p>
         <label class="field"><span>Số từ mới mỗi ngày</span><input class="input" type="number" min="1" max="100" id="s-new" value="${s.newPerDay}"></label>
         <label class="field"><span>Số thẻ ôn tối đa mỗi ngày</span><input class="input" type="number" min="10" max="1000" id="s-rev" value="${s.reviewsPerDay}"></label>
         <label class="field row"><input type="checkbox" id="s-ipa" ${s.showIpa !== false ? 'checked' : ''}><span>Hiện phiên âm IPA (Anh–Mỹ) trên thẻ và trong thư viện</span></label>
@@ -2093,8 +2458,13 @@
         <label class="field"><span>Chế độ màu</span><select class="input" id="s-theme">${sel(s.theme, [['auto', 'Theo hệ thống'], ['light', 'Sáng'], ['dark', 'Tối']])}</select></label>
       </section>
       <section class="card form">
+        <h2>Thời gian đã sử dụng</h2>
+        <div class="row wrap" id="s-usage">${usageHTML()}</div>
+        <p class="hint">Chỉ tính khi bạn đang mở và thao tác trên trang (ngừng đếm sau 2 phút không hoạt động).</p>
+      </section>
+      <section class="card form">
         <h2>Dữ liệu</h2>
-        <p class="hint">Tiến độ nằm trong localStorage của trình duyệt, nên đổi máy hoặc xóa dữ liệu trình duyệt sẽ mất. Hãy xuất file sao lưu định kỳ.</p>
+        <p class="hint">Tiến độ nằm trong localStorage của trình duyệt, nên đổi máy hoặc xóa dữ liệu trình duyệt sẽ mất. Hãy xuất file sao lưu định kỳ. ${s.lastBackup ? 'Lần sao lưu cuối: ' + new Date(s.lastBackup).toLocaleDateString('vi-VN') + '.' : 'Bạn chưa sao lưu lần nào.'}</p>
         <div class="row wrap">
           <button class="btn" id="s-export">Xuất file sao lưu</button>
           <label class="btn" for="s-import">Nhập file sao lưu</label>
@@ -2110,7 +2480,8 @@
     const num = (v, lo, hi, d) => { const n = parseInt(v, 10); return isNaN(n) ? d : Math.max(lo, Math.min(hi, n)); };
     view.onchange = (e) => {
       const id = e.target.id;
-      if (id === 's-new') s.newPerDay = num(e.target.value, 1, 100, 10);
+      if (id === 's-goal') s.goal = e.target.value;
+      else if (id === 's-new') s.newPerDay = num(e.target.value, 1, 100, 10);
       else if (id === 's-rev') s.reviewsPerDay = num(e.target.value, 10, 1000, 200);
       else if (id === 's-auto') s.autoSpeak = e.target.checked;
       else if (id === 's-ipa') s.showIpa = e.target.checked;
@@ -2126,6 +2497,7 @@
           try {
             if (!confirm('Nhập file này sẽ thay thế toàn bộ tiến độ hiện tại. Tiếp tục?')) return;
             Store.importJSON(String(fr.result));
+            Data.setCustom(Store.get().custom);
             applyTheme();
             toast('Đã nhập dữ liệu.');
             renderSettings();
@@ -2143,16 +2515,9 @@
       const b = e.target.closest('button');
       if (!b) return;
       if (b.id === 's-test') TTS.speak('Hello! Welcome to hiuhf0. Let us learn some new words today.');
-      if (b.id === 's-export') {
-        const blob = new Blob([Store.exportJSON()], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'hiuhf0-backup-' + Store.dayKey() + '.json';
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      }
+      if (b.id === 's-export') { exportBackup(); renderSettings(); }
       if (b.id === 's-reset' && confirm('Xóa toàn bộ tiến độ và cài đặt? Không thể hoàn tác.')) {
-        Store.reset(); applyTheme(); toast('Đã xóa dữ liệu.'); renderSettings();
+        Store.reset(); Data.setCustom([]); applyTheme(); toast('Đã xóa dữ liệu.'); renderSettings();
       }
     };
   }
@@ -2161,8 +2526,9 @@
 
   /* ================= Khởi động ================= */
   if (Data.warnings.length) console.warn('[hiuhf0] Cảnh báo dữ liệu:', Data.warnings);
+  Data.setCustom(Store.get().custom);
   applyTheme();
   window.addEventListener('hashchange', route);
-  window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L, speak: () => SP };
+  window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L, speak: () => SP, placement: () => PL };
   route();
 })();

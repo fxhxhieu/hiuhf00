@@ -4,13 +4,17 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 
 ## Tính năng
 
-- **Học kiểu Mochi, hệ thống tự xếp cấp**: không cần chọn bộ thẻ. Từ mới đi qua ba bước: lật thẻ, Nghe & chọn, Nghe & viết. Mỗi từ tự được xếp vào cấp 0 đến 5 (Mới, Mới gặp, Nhận ra, Nhớ được, Vững, Thuộc lòng) theo kết quả bài tập.
-- **Trang chính**: nút **Ôn tập ngay**, **Học từ mới**, **Học thêm 10 từ mới**, biểu đồ phân bố cấp thuộc. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (nhảy thẳng lên cấp 5, phím tắt 1 và 2).
-- **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Làm sai thì từ xuống cấp và quay lại sớm, khoảng cách giảm một nửa.
+- **Học kiểu Mochi, hệ thống tự xếp cấp**: không cần chọn bộ thẻ. Từ mới đi qua ba bước: lật thẻ, Nghe & chọn, Nghe & viết. Mỗi từ tự được xếp vào cấp 0 đến 5 (Mới, Mới gặp, Nhận ra, Nhớ được, Vững, Thuộc lòng). Cấp 2 là "đã qua bài trong phiên, chờ ôn lại sau ít nhất 1 ngày"; chỉ khi nhớ đúng lúc ôn lại mới lên cấp 3 trở lên. Từ cấp 4 trở lên phải gõ ra khi ôn, cấp 5 cần khoảng cách từ 21 ngày và ôn đúng 2 lần liên tiếp.
+- **Trang chính**: nút **Ôn tập ngay**, **Học từ mới**, **Học thêm 10 từ mới**, biểu đồ phân bố cấp thuộc. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (phím tắt 1 và 2). Với từ chưa học, "Đã nhớ rõ từ" phải qua một câu nghe và gõ lại thì mới lên thẳng cấp 5. Cuối phiên có danh sách từ cần chú ý.
+- **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Khoảng cách tính theo số ngày thực tế: ôn sớm mà đúng thì không đổi lịch, ôn trễ được cộng nửa số ngày trễ. Đúng nhờ trắc nghiệm thì khoảng cách tăng chậm hơn gõ đúng. Quên thì khoảng cách còn 25% (tối đa 14 ngày). Gõ sai đúng một ký tự (từ từ 5 chữ cái) được gõ lại một lần, và chấp nhận chính tả Anh–Mỹ lẫn Anh–Anh. Sai ở bài Nghe, Nói hoặc Kiểm tra cuối bài cũng kéo lịch ôn của từ đã thuộc lại gần hơn (tối đa một lần mỗi ngày).
+- **Mục tiêu và xếp trình độ**: lần đầu mở app có màn chào mừng để chọn mục tiêu (giao tiếp, IELTS, TOEIC) và số từ mới mỗi ngày, rồi làm bài xếp trình độ tối đa 20 câu để bỏ qua các cấp đã biết. "Học từ mới" đi theo đúng thứ tự bài trong Lộ trình; mục tiêu IELTS hoặc TOEIC ưu tiên từ của kỳ thi sau phần nền tảng A0 và A1.
+- **Lịch ôn sắp tới**: trang chính dự báo số thẻ đến hạn hôm nay, ngày mai, 2 đến 7 ngày tới, và tỉ lệ nhớ đúng khi ôn trong 14 ngày qua (hiện sau 10 lượt ôn). Thanh cấp thuộc tính trên số từ đã học.
+- **Từ của tôi**: thêm từ gặp ngoài đời ở Thư viện, hoặc bấm vào từ lạ trong Dịch bài. Từ được học sớm nhất và nằm trong sao lưu.
+- **Nhắc sao lưu**: trang chính nhắc khi đã quá 7 ngày chưa xuất file sao lưu.
 - **2.171 từ vựng** chia theo cấp độ A0 Nhập môn (100 từ: đại từ, mạo từ, to be, trợ động từ, số, mẫu câu chào hỏi), A1, A2, B1 và 22 chủ đề, gồm hai chủ đề thi: IELTS (từ học thuật) và TOEIC (công sở, kinh doanh). Mỗi từ có loại từ, nghĩa tiếng Việt, định nghĩa Anh–Anh, câu ví dụ, IPA; hơn 400 từ cụ thể có thêm emoji minh họa.
 - **Thư viện từ**: tìm theo tiếng Anh hoặc tiếng Việt, lọc theo cấp độ CEFR, chủ đề, cấp thuộc; ưu tiên học một từ hoặc đánh dấu "đã nhớ rõ".
 - **Phiên âm IPA (Anh–Mỹ)** cho cả 2.171 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
-- **Lộ trình** gồm 224 bài nhỏ (khoảng 10 từ mỗi bài). Mỗi bài có 4 bước: học từ, luyện nghe, luyện nói, kiểm tra cuối (đạt từ 70% thì mở bài tiếp theo). Có thể bỏ qua bài đã biết hoặc mở khóa toàn bộ trong Cài đặt.
+- **Lộ trình** gồm 224 bài nhỏ (khoảng 10 từ mỗi bài). Mỗi bài có 4 bước: học từ, luyện nghe, luyện nói, kiểm tra cuối (đạt từ 70% thì mở bài tiếp theo). Bài đã biết thì bấm "Mình đã biết hết, kiểm tra ngay" (đạt từ 70% là qua), hoặc làm bài xếp trình độ, hoặc mở khóa toàn bộ trong Cài đặt.
 - **Luyện nói**: đọc to từng từ, trình duyệt (Chrome, Edge) tự chấm; mỗi từ kèm gợi ý đặt lưỡi, môi cho các âm khó (th, r, l, sh, ch, ng, âm cuối, nguyên âm ngắn dài). Nhóm luyện theo âm hoặc theo từ khó của bạn.
 - **Từ khó** tự cập nhật: từ làm sai ở bài nghe hoặc bài nói được thêm vào, làm đúng lại thì được bỏ ra.
 - **Thành tích**: 18 huy hiệu (số từ, chuỗi ngày, số câu nghe, hoàn thành bài, A0…).
@@ -44,9 +48,10 @@ Chạy thử trên máy: mở thư mục bằng một server tĩnh bất kỳ, v
 ```
 index.html
 css/style.css
+tests/srs.test.js   kiểm thử thuật toán SRS (node --test)
 js/
   app.js       giao diện và các màn hình
-  srs.js       thuật toán lặp lại ngắt quãng
+  srs.js       thuật toán lặp lại ngắt quãng và cách xếp cấp thuộc
   store.js     lưu tiến độ vào localStorage, xuất/nhập JSON
   tts.js       đọc to bằng Web Speech API
   (sw.js, manifest.webmanifest, icons/ ở thư mục gốc: PWA dùng offline)
@@ -61,6 +66,14 @@ js/
     quiz.js                          câu hỏi nghe hiểu cho từng bài
     ipa.js                           phiên âm IPA từng từ (từ|IPA)
     pairs.js                         cặp âm dễ nhầm
+```
+
+## Kiểm thử
+
+Thuật toán SRS (`js/srs.js`) có bộ kiểm thử chạy bằng Node, không cần cài thêm gì:
+
+```bash
+node --test
 ```
 
 ## Thêm từ vựng
