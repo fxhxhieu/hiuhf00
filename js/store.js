@@ -12,7 +12,11 @@ const Store = (() => {
     onboarded: false,   // đã qua màn chào mừng đầu tiên chưa
     voice: '',
     rate: 0.9,
-    theme: 'auto'       // auto | light | dark
+    theme: 'auto',      // auto | light | dark
+    skin: 'matcha',     // matcha | sakura | sky: giao diện màu
+    fx: (navigator.hardwareConcurrency || 4) <= 2 ? 'light' : 'full', // full | light | off: mức hiệu ứng
+    sound: false,       // âm thanh tự tạo, mặc định tắt
+    haptics: false      // rung nhẹ trên điện thoại, mặc định tắt
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));

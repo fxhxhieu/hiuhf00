@@ -37,6 +37,20 @@ const Data = (() => {
     { key: 'abstract', vi: 'Khái niệm & ý tưởng', icon: '💡' },
     { key: 'ielts', vi: 'IELTS: từ học thuật thường gặp', icon: '🎯' },
     { key: 'toeic', vi: 'TOEIC: công sở & kinh doanh', icon: '📈' },
+    { key: 'animals', vi: 'Động vật', icon: '🐶' },
+    { key: 'weather', vi: 'Thời tiết & khí hậu', icon: '⛅' },
+    { key: 'numbers', vi: 'Số đếm & thứ tự', icon: '🔢' },
+    { key: 'calendar', vi: 'Lịch & thời gian', icon: '📅' },
+    { key: 'sports', vi: 'Thể thao', icon: '⚽' },
+    { key: 'jobs', vi: 'Nghề nghiệp', icon: '🧑‍🍳' },
+    { key: 'vehicles', vi: 'Phương tiện', icon: '🚌' },
+    { key: 'routine', vi: 'Thói quen hằng ngày', icon: '🌅' },
+    { key: 'sit-restaurant', vi: 'Tình huống: nhà hàng & gọi món', icon: '🍽️' },
+    { key: 'sit-hotel', vi: 'Tình huống: khách sạn', icon: '🏨' },
+    { key: 'sit-airport', vi: 'Tình huống: sân bay', icon: '🛫' },
+    { key: 'sit-doctor', vi: 'Tình huống: đi khám bệnh', icon: '🏥' },
+    { key: 'sit-directions', vi: 'Tình huống: hỏi đường', icon: '🧭' },
+    { key: 'sit-phone', vi: 'Tình huống: gọi điện thoại', icon: '📞' },
     { key: 'mine', vi: 'Từ của tôi', icon: '⭐' }
   ];
   const topicMap = {};
@@ -103,7 +117,7 @@ const Data = (() => {
       words.splice(i, 1);
     }
     (list || []).forEach((c) => {
-      const w = { word: c.word, pos: c.pos, vi: c.vi, def: c.def || '', ex: c.ex || '', level: 'MY', topic: 'mine', custom: true, ipa: '', emoji: '' };
+      const w = { word: c.word, pos: c.pos, vi: c.vi, def: c.def || '', ex: c.ex || '', level: 'MY', topic: 'mine', tags: [], custom: true, ipa: '', emoji: '' };
       w.id = idOf(w.word, w.pos);
       if (byId.has(w.id)) return;
       w.ipa = ipaMap[w.id] || ipaMap[w.word.toLowerCase()] || '';
@@ -155,6 +169,29 @@ const Data = (() => {
     units.forEach((u, i) => { u.n = i + 1; unitById.set(u.id, u); u.ids.forEach((id) => unitOfWord.set(id, u)); });
   })();
 
+  /* ----- Phân loại lại chủ đề để hiển thị (không đổi cách chia bài của Lộ trình) -----
+   * =chủ-đề|từ1, từ2   chuyển từ sang chủ đề đó
+   * +chủ-đề|từ1, từ2   thêm nhãn chủ đề phụ (một từ có thể thuộc nhiều chủ đề)
+   * Viết "từ~loại" khi cần chỉ rõ một loại từ; không có "~" thì áp dụng cho mọi loại từ cùng chữ. */
+  words.forEach((w) => { w.tags = []; });
+  String((typeof window !== 'undefined' && window.TOPICMAP_RAW) || '').split('\n').forEach((line) => {
+    const t = line.trim();
+    if (!t || t.charAt(0) === '/') return;
+    const mode = t.charAt(0), i = t.indexOf('|');
+    if ((mode !== '=' && mode !== '+') || i < 0) { warnings.push('Dòng phân loại sai: ' + t); return; }
+    const topic = t.slice(1, i).trim();
+    if (!topicMap[topic]) { warnings.push('Chủ đề lạ trong phân loại: ' + topic); return; }
+    t.slice(i + 1).split(',').forEach((tok) => {
+      tok = tok.trim();
+      if (!tok) return;
+      const [word, pos] = tok.split('~');
+      const hit = pos ? [byId.get(idOf(word, pos))].filter(Boolean) : words.filter((w) => w.word.toLowerCase() === word.toLowerCase());
+      if (!hit.length) { warnings.push('Phân loại: không thấy từ ' + tok); return; }
+      hit.forEach((w) => { if (mode === '=') w.topic = topic; else if (w.topic !== topic && w.tags.indexOf(topic) < 0) w.tags.push(topic); });
+    });
+  });
+  const inTopic = (w, key) => w.topic === key || w.tags.indexOf(key) >= 0;
+
   function stems(t) {
     const out = [t];
     const add = (s) => { if (s.length > 1 && out.indexOf(s) < 0) out.push(s); };
@@ -187,5 +224,5 @@ const Data = (() => {
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, inTopic, warnings };
 })();

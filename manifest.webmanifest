@@ -1,12 +1,12 @@
 {
   "name": "hiuhf0 · Học từ vựng tiếng Anh",
   "short_name": "hiuhf0",
-  "description": "Học từ vựng tiếng Anh A1 đến B1 bằng flashcard, lặp lại ngắt quãng, phiên âm IPA và shadowing.",
+  "description": "Học từ vựng tiếng Anh A0 đến B1 cùng Dango: flashcard, lặp lại ngắt quãng, luyện nghe nói, shadowing và sưu tầm sticker.",
   "start_url": "./index.html#learn",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#eef1f5",
-  "theme_color": "#eef1f5",
+  "background_color": "#fff6ec",
+  "theme_color": "#fff6ec",
   "lang": "vi",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

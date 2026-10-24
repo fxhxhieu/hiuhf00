@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>hiuhf0 · Học từ vựng tiếng Anh</title>
   <meta name="description" content="hiuhf0: học hơn 2.000 từ vựng tiếng Anh từ A0 đến B1 bằng flashcard và lặp lại ngắt quãng, luyện nghe, luyện nói, shadowing và dịch bài.">
-  <meta name="theme-color" content="#eef1f5">
+  <meta name="theme-color" content="#fff6ec">
   <link rel="icon" type="image/png" href="icons/avatar-64.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -21,8 +21,8 @@
     </a>
     <nav class="nav" aria-label="Điều hướng chính">
       <a href="#learn" data-r="learn">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="4"/><path d="M9 12h6"/></svg>
-        <span>Học</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+        <span>Hôm nay</span>
       </a>
       <a href="#path" data-r="path">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h12l-3 4.5L17 13H5"/></svg>
@@ -32,25 +32,18 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h10a4 4 0 0 1 4 4v10H9a4 4 0 0 1-4-4z"/><path d="M9 9h6M9 13h4"/></svg>
         <span>Từ vựng</span>
       </a>
-      <a href="#listen" data-r="listen">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <span>Nghe</span>
+      <a href="#practice" data-r="practice">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="2"/><rect x="17" y="14" width="4" height="6" rx="2"/></svg>
+        <span>Luyện</span>
       </a>
-      <a href="#shadow" data-r="shadow">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-        <span>Shadowing</span>
-      </a>
-      <a href="#read" data-r="read">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
-        <span>Dịch bài</span>
-      </a>
-      <a href="#settings" data-r="settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
-        <span>Cài đặt</span>
+      <a href="#more" data-r="more">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></svg>
+        <span>Thêm</span>
       </a>
     </nav>
   </header>
 
+  <div id="bg" aria-hidden="true"></div>
   <main id="view" tabindex="-1" aria-live="polite"></main>
   <div id="toast" role="status" aria-live="polite"></div>
   <noscript><p style="padding:24px">hiuhf0 cần bật JavaScript để chạy.</p></noscript>
@@ -66,6 +59,8 @@
   <script src="js/data/vocab-a2-3.js"></script>
   <script src="js/data/vocab-b1-3.js"></script>
   <script src="js/data/vocab-exam.js"></script>
+  <script src="js/data/vocab-extra.js"></script>
+  <script src="js/data/topics-map.js"></script>
   <script src="js/data/texts.js"></script>
   <script src="js/data/texts-a0.js"></script>
   <script src="js/data/quiz.js"></script>
@@ -77,6 +72,8 @@
   <script src="js/store.js"></script>
   <script src="js/srs.js"></script>
   <script src="js/tts.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {

@@ -2169,4 +2169,199 @@ upgrade~v|əpˈgreɪd
 increase~n|ˈɪnˌkris
 permit~v|pɝˈmɪt
 contrast~n|ˈkɑnˌtræst
+puppy|ˈpəpi
+kitten|ˈkɪtən
+turtle|ˈtɝtəl
+pet|pɛt
+tail|teɪl
+rainbow|ˈreɪnˌboʊ
+raincoat|ˈreɪnˌkoʊt
+dozen|ˈdəzən
+sixth|sɪksθ
+seventh|ˈsɛvənθ
+eighth|eɪtθ
+ninth|naɪnθ
+tenth|tɛnθ
+tonight|təˈnaɪt
+midnight|ˈmɪdˌnaɪt
+sunrise|ˈsənˌraɪz
+sunset|ˈsənˌsɛt
+weekday|ˈwikˌdeɪ
+ball|bɔl
+race|reɪs
+yoga|ˈjoʊgə
+chef|ʃɛf
+waiter|ˈweɪtɝ
+waitress|ˈweɪtrəs
+police officer|pəˈlis ˈɔfəsɝ
+truck|trək
+van|væn
+scooter|ˈskutɝ
+ferry|ˈfɛri
+helmet|ˈhɛlmət
+brush|brəʃ
+nap|næp
+toothbrush|ˈtuθbrəʃ
+toothpaste|ˈtuθˌpeɪst
+comb|koʊm
+get up|gɛt əp
+take a shower|teɪk eɪ ʃaʊɝ
+brush my teeth|brəʃ maɪ tiθ
+have breakfast|hæv ˈbrɛkfəst
+get dressed|gɛt drɛst
+go to work|goʊ tu wɝk
+go to school|goʊ tu skul
+do homework|du ˈhoʊmˌwɝk
+do the dishes|du ðə ˈdɪʃəz
+make the bed|meɪk ðə bɛd
+come home|kəm hoʊm
+watch tv|wɑtʃ ˈtiˈvi
+set the alarm|sɛt ðə əˈlɑrm
+turn off the light|tɝn ɔf ðə laɪt
+sleepy|ˈslipi
+hug|həg
+fox|fɑks
+deer|dɪr
+zebra|ˈzibrə
+giraffe|dʒɝˈæf
+dolphin|ˈdɑlfən
+shark|ʃɑrk
+penguin|ˈpɛŋgwən
+owl|aʊl
+eagle|ˈigəl
+squirrel|skwɝəl
+camel|ˈkæməl
+ant|ænt
+mosquito|məˈskitoʊ
+parrot|ˈpɛrət
+crocodile|ˈkrɑkəˌdaɪl
+panda|ˈpændə
+fur|fɝ
+nest|nɛst
+breeze|briz
+humid|ˈhjuməd
+chilly|ˈtʃɪli
+mild|maɪld
+drizzle|ˈdrɪzəl
+thunderstorm|ˈθəndɝˌstɔrm
+typhoon|ˌtaɪˈfun
+billion|ˈbɪljən
+digit|ˈdɪdʒət
+dawn|dɔn
+decade|ˈdɛkeɪd
+anniversary|ˌænəˈvɝsɝi
+lately|ˈleɪtli
+trophy|ˈtroʊfi
+goalkeeper|ˈgoʊlˌkipɝ
+supporter|səˈpɔrtɝ
+golf|gɑlf
+skiing|skiɪŋ
+skating|ˈskeɪtɪŋ
+surfing|ˈsɝfɪŋ
+marathon|ˈmɛrəˌθɑn
+stretch|strɛtʃ
+defeat|dɪˈfit
+firefighter|ˈfaɪrˌfaɪtɝ
+mechanic|məˈkænɪk
+plumber|ˈpləmɝ
+builder|ˈbɪldɝ
+baker|ˈbeɪkɝ
+cashier|kæˈʃɪr
+receptionist|riˈsɛpʃənɪst
+tailor|ˈteɪlɝ
+scientist|ˈsaɪəntɪst
+photographer|fəˈtɑgrəfɝ
+programmer|ˈproʊˌgræmɝ
+designer|dɪˈzaɪnɝ
+accountant|əˈkaʊntənt
+architect|ˈɑrkəˌtɛkt
+musician|mjuˈzɪʃən
+dancer|ˈdænsɝ
+pharmacist|ˈfɑrməsɪst
+vet|vɛt
+helicopter|ˈhɛlɪˌkɑptɝ
+ambulance|ˈæmbjələns
+tram|træm
+rocket|ˈrɑkət
+tractor|ˈtræktɝ
+wheel|hwil
+engine|ˈɛndʒən
+brake|breɪk
+seat belt|sit bɛlt
+parking|ˈpɑrkɪŋ
+delighted|dɪˈlaɪtəd
+a table for two please|eɪ ˈteɪbəl fɔr tu pliz
+can i see the menu|kæn aɪ si ðə ˈmɛnju
+i would like to order|aɪ wʊd laɪk tu ˈɔrdɝ
+what do you recommend|hwət du ju ˌrɛkəˈmɛnd
+i am allergic to peanuts|aɪ æm əˈlɝdʒɪk tu ˈpiˌnəts
+without ice please|wɪˈðaʊt aɪs pliz
+could we have some water|kʊd wi hæv səm ˈwɔtɝ
+this is delicious|ðɪs ɪz dɪˈlɪʃəs
+the bill please|ðə bɪl pliz
+can i pay by card|kæn aɪ peɪ baɪ kɑrd
+keep the change|kip ðə tʃeɪndʒ
+to go please|tu goʊ pliz
+i have a reservation|aɪ hæv eɪ ˌrɛzɝˈveɪʃən
+a single room|eɪ ˈsɪŋgəl rum
+a double room|eɪ ˈdəbəl rum
+how much is it per night|haʊ mətʃ ɪz ɪt pɝ naɪt
+what time is check out|hwət taɪm ɪz tʃɛk aʊt
+is breakfast included|ɪz ˈbrɛkfəst ˌɪnˈkludəd
+can i have the wifi password|kæn aɪ hæv ðə ˈwaɪˌfaɪ ˈpæsˌwɝd
+my room key does not work|maɪ rum ki dəz nɑt wɝk
+there is no hot water|ðɛr ɪz noʊ hɑt ˈwɔtɝ
+could you wake me up at six|kʊd ju weɪk mi əp æt sɪks
+can i leave my luggage here|kæn aɪ liv maɪ ˈləgədʒ hir
+i would like to extend my stay|aɪ wʊd laɪk tu ɪkˈstɛnd maɪ steɪ
+where is the check in desk|hwɛr ɪz ðə tʃɛk ɪn dɛsk
+here is my passport|hir ɪz maɪ ˈpæsˌpɔrt
+window seat or aisle seat|ˈwɪndoʊ sit ɔr aɪəl sit
+how many bags do you have|haʊ ˈmɛni bægz du ju hæv
+this is my carry on bag|ðɪs ɪz maɪ ˈkæri ɑn bæg
+what is the boarding gate|hwət ɪz ðə ˈbɔrdɪŋ geɪt
+the flight is delayed|ðə flaɪt ɪz dɪˈleɪd
+the flight is cancelled|ðə flaɪt ɪz ˈkænsəld
+please fasten your seat belt|pliz ˈfæsən jɔr sit bɛlt
+where can i get my luggage|hwɛr kæn aɪ gɛt maɪ ˈləgədʒ
+i have nothing to declare|aɪ hæv ˈnəθɪŋ tu dɪˈklɛr
+what is the purpose of your visit|hwət ɪz ðə ˈpɝpəs əv jɔr ˈvɪzɪt
+i do not feel well|aɪ du nɑt fil wɛl
+i have a headache|aɪ hæv eɪ ˈhɛˌdeɪk
+i have a sore throat|aɪ hæv eɪ sɔr θroʊt
+my stomach hurts|maɪ ˈstəmək hɝts
+i have a fever|aɪ hæv eɪ ˈfivɝ
+how long have you had these symptoms|haʊ lɔŋ hæv ju hæd ðiz ˈsɪmptəmz
+take this medicine twice a day|teɪk ðɪs ˈmɛdəsən twaɪs eɪ deɪ
+you need to rest|ju nid tu rɛst
+drink a lot of water|drɪŋk eɪ lɑt əv ˈwɔtɝ
+i am allergic to penicillin|aɪ æm əˈlɝdʒɪk tu ˌpɛnəˈsɪlən
+i would like to make an appointment|aɪ wʊd laɪk tu meɪk æn əˈpɔɪntmənt
+where is the nearest pharmacy|hwɛr ɪz ðə ˈnɪrəst ˈfɑrməsi
+where is the station|hwɛr ɪz ðə ˈsteɪʃən
+how do i get to the airport|haʊ du aɪ gɛt tu ðə ˈɛrˌpɔrt
+turn left|tɝn lɛft
+turn right|tɝn raɪt
+go straight ahead|goʊ streɪt əˈhɛd
+take the second street on the left|teɪk ðə ˈsɛkənd strit ɑn ðə lɛft
+it is next to the bank|ɪt ɪz nɛks tu ðə bæŋk
+it is opposite the park|ɪt ɪz ˈɑpəzət ðə pɑrk
+it is on the corner|ɪt ɪz ɑn ðə ˈkɔrnɝ
+how far is it|haʊ fɑr ɪz ɪt
+is it far from here|ɪz ɪt fɑr frəm hir
+i am lost|aɪ æm lɔst
+can you show me on the map|kæn ju ʃoʊ mi ɑn ðə mæp
+hello this is lan speaking|həˈloʊ ðɪs ɪz læn ˈspikɪŋ
+who is calling|hu ɪz ˈkɔlɪŋ
+can i speak to mr nam|kæn aɪ spik tu ˈmɪstɝ næm
+please hold on|pliz hoʊld ɑn
+he is not here right now|hi ɪz nɑt hir raɪt naʊ
+can i take a message|kæn aɪ teɪk eɪ ˈmɛsədʒ
+please call me back|pliz kɔl mi bæk
+i will call you later|aɪ wɪl kɔl ju ˈleɪtɝ
+sorry wrong number|ˈsɑri rɔŋ ˈnəmbɝ
+i cannot hear you|aɪ ˈkænɑt hir ju
+the line is busy|ðə laɪn ɪz ˈbɪzi
+my battery is low|maɪ ˈbætɝi ɪz loʊ
+heatwave|ˈhitˌweɪv
 `;

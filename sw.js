@@ -1,11 +1,12 @@
 /* hiuhf0 — service worker: dùng offline. Ưu tiên mạng; mất mạng hoặc mạng quá chậm (4 giây) thì lấy bản đã lưu. */
-const CACHE = 'hiuhf0-v5';
+const CACHE = 'hiuhf0-v6';
 const NET_TIMEOUT = 4000;
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/data.js', 'js/store.js', 'js/srs.js', 'js/tts.js', 'js/app.js',
+  'js/data.js', 'js/store.js', 'js/srs.js', 'js/tts.js', 'js/mascot.js', 'js/fx.js', 'js/app.js',
+  'fonts/nunito-latin.woff2', 'fonts/nunito-vietnamese.woff2',
   'js/data/vocab-a0.js', 'js/data/vocab-a1-1.js', 'js/data/vocab-a1-2.js', 'js/data/vocab-a2-1.js', 'js/data/vocab-a2-2.js',
-  'js/data/vocab-b1-1.js', 'js/data/vocab-b1-2.js', 'js/data/vocab-a2-3.js', 'js/data/vocab-b1-3.js', 'js/data/vocab-exam.js', 'js/data/emoji.js', 'js/data/texts.js', 'js/data/texts-a0.js', 'js/data/quiz.js', 'js/data/ipa.js', 'js/data/pairs.js',
+  'js/data/vocab-b1-1.js', 'js/data/vocab-b1-2.js', 'js/data/vocab-a2-3.js', 'js/data/vocab-b1-3.js', 'js/data/vocab-exam.js', 'js/data/vocab-extra.js', 'js/data/topics-map.js', 'js/data/emoji.js', 'js/data/texts.js', 'js/data/texts-a0.js', 'js/data/quiz.js', 'js/data/ipa.js', 'js/data/pairs.js',
   'icons/avatar-64.png', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
