@@ -16,11 +16,14 @@ const Store = (() => {
     skin: 'matcha',     // matcha | sakura | sky: giao diện màu
     fx: (navigator.hardwareConcurrency || 4) <= 2 ? 'light' : 'full', // full | light | off: mức hiệu ứng
     sound: false,       // âm thanh tự tạo, mặc định tắt
-    haptics: false      // rung nhẹ trên điện thoại, mặc định tắt
+    haptics: false,     // rung nhẹ trên điện thoại, mặc định tắt
+    dangoAcc: '',       // phụ kiện Dango đang đeo (mở khóa bằng sticker)
+    pinStickers: [],    // tối đa 3 sticker ghim lên trang Hôm nay
+    journalPin: ''      // mã băm của mã PIN nhật ký (chỉ che nội dung trên giao diện, không mã hóa)
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 }, usage: { total: 0, days: {} }, custom: [] });
+  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 }, usage: { total: 0, days: {} }, custom: [], stats: {}, journal: {}, letters: [] });
 
   function normalize(o) {
     const b = blank();
@@ -38,6 +41,24 @@ const Store = (() => {
     if (Array.isArray(o.custom)) {
       const s = (v, n) => String(v == null ? '' : v).slice(0, n);
       b.custom = o.custom.filter((c) => c && c.word && c.vi && c.pos).map((c) => ({ word: s(c.word, 40), pos: s(c.pos, 8), vi: s(c.vi, 200), def: s(c.def, 300), ex: s(c.ex, 300) }));
+    }
+    if (o.stats && typeof o.stats === 'object') b.stats = o.stats;
+    if (o.journal && typeof o.journal === 'object') {
+      const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+      Object.keys(o.journal).forEach((k) => {
+        const e = o.journal[k];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !e || typeof e !== 'object') return;
+        b.journal[k] = {
+          text: str(e.text, 20000), mood: str(e.mood, 8), topic: str(e.topic, 40), prompt: str(e.prompt, 300),
+          created: Number(e.created) || 0, updated: Number(e.updated) || 0, words: Number(e.words) || 0,
+          used: Array.isArray(e.used) ? e.used.slice(0, 200).map((x) => str(x, 60)) : [],
+          challenge: Number(e.challenge) || 0
+        };
+      });
+    }
+    if (Array.isArray(o.letters)) {
+      const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+      b.letters = o.letters.filter((l) => l && l.text).slice(0, 200).map((l) => ({ id: str(l.id, 40) || String(Number(l.created) || Date.now()), title: str(l.title, 100), text: str(l.text, 20000), created: Number(l.created) || 0, openOn: Number(l.openOn) || 0, opened: Number(l.opened) || 0 }));
     }
     if (o.usage && typeof o.usage === 'object') {
       b.usage.total = Number(o.usage.total) || 0;
@@ -78,7 +99,19 @@ const Store = (() => {
     return state.daily;
   }
 
+  /* Ghi nhận khung giờ học để mở sticker Cú đêm, Chim sớm */
+  function touchTime() {
+    const t = new Date(), h = t.getHours();
+    if (h >= 23 || h < 4) bump('night'); else if (h >= 4 && h < 7) bump('early');
+    if (h === 0 && t.getMinutes() < 10) bump('midnight');
+  }
+
+  function bump(key, n = 1) { state.stats[key] = (state.stats[key] || 0) + n; save(); }
+  function setStat(key, v) { state.stats[key] = v; save(); }
+  const stat = (key) => state.stats[key] || 0;
+
   function logReview(isNew, ok) {
+    touchTime();
     const d = daily();
     if (isNew) d.newDone += 1; else d.reviewDone += 1;
     const k = dayKey();
@@ -104,6 +137,8 @@ const Store = (() => {
 
   /** Ghi kết quả một câu luyện nghe (tính vào chuỗi ngày học). */
   function logListen(mode, ok) {
+    touchTime();
+    if (ok) bump('listenRun'); else setStat('listenRun', 0);
     const m = state.listen[mode] || (state.listen[mode] = { n: 0, ok: 0 });
     m.n += 1;
     if (ok) m.ok += 1;
@@ -144,16 +179,41 @@ const Store = (() => {
     return { today: u.days[dayKey()] || 0, week, total: u.total };
   }
 
-  function streak() {
+  /* Chuỗi ngày học. Mỗi cửa sổ 7 ngày được "giữ chuỗi" một ngày lỡ (Dango giữ chuỗi): ngày lỡ đó không cộng thêm
+   * nhưng cũng không làm đứt chuỗi, miễn là hôm trước nữa có học. */
+  function streakInfo() {
     const d = new Date();
     d.setHours(12, 0, 0, 0);
-    const t = state.log[dayKey(d.getTime())];
-    if (!(t && t.n + t.r + (t.l || 0) > 0)) d.setDate(d.getDate() - 1);
-    let n = 0;
+    const active = (dt) => { const l = state.log[dayKey(dt.getTime())]; return !!(l && l.n + l.r + (l.l || 0) > 0); };
+    if (!active(d)) d.setDate(d.getDate() - 1); // hôm nay chưa học thì tính từ hôm qua
+    let n = 0, lastFrozen = null;
+    const frozen = [];
     for (;;) {
-      const l = state.log[dayKey(d.getTime())];
-      if (l && l.n + l.r + (l.l || 0) > 0) { n += 1; d.setDate(d.getDate() - 1); } else break;
+      if (active(d)) { n += 1; d.setDate(d.getDate() - 1); continue; }
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 1);
+      if (!active(prev) || (lastFrozen !== null && lastFrozen - d.getTime() < 7 * 86400000)) break;
+      frozen.push(dayKey(d.getTime()));
+      lastFrozen = d.getTime();
+      d.setDate(d.getDate() - 1);
     }
+    return { n, frozen };
+  }
+  const streak = () => streakInfo().n;
+
+  /* ----- Nhật ký ----- */
+  const journalDates = () => Object.keys(state.journal).filter((k) => state.journal[k].text.trim()).sort().reverse();
+  const journalGet = (k) => state.journal[k] || null;
+  function journalSet(k, e) { state.journal[k] = e; save(); }
+  function journalDel(k) { delete state.journal[k]; save(); }
+  /** Số ngày liên tiếp có viết nhật ký (tính từ hôm nay, hoặc hôm qua nếu hôm nay chưa viết). */
+  function journalStreak() {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    const has = (dt) => { const e = state.journal[dayKey(dt.getTime())]; return !!(e && e.text.trim()); };
+    if (!has(d)) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (has(d)) { n += 1; d.setDate(d.getDate() - 1); }
     return n;
   }
 
@@ -167,7 +227,7 @@ const Store = (() => {
     card: (id) => state.cards[id] || null,
     setCard(id, c) { state.cards[id] = c; save(); },
     delCard(id) { delete state.cards[id]; save(); },
-    save, flush, daily, dayKey, logReview, retention, logListen, flag, setPath, logSpeak, award, streak, textState, addUsage, usageStats,
+    save, flush, daily, dayKey, logReview, retention, logListen, streakInfo, bump, setStat, stat, journalDates, journalGet, journalSet, journalDel, journalStreak, flag, setPath, logSpeak, award, streak, textState, addUsage, usageStats,
     exportJSON() { return JSON.stringify(state, null, 2); },
     importJSON(text) {
       const o = JSON.parse(text);

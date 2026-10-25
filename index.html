@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>hiuhf0 · Học từ vựng tiếng Anh</title>
-  <meta name="description" content="hiuhf0: học hơn 2.000 từ vựng tiếng Anh từ A0 đến B1 bằng flashcard và lặp lại ngắt quãng, luyện nghe, luyện nói, shadowing và dịch bài.">
+  <meta name="description" content="hiuhf0: học hơn 2.000 từ vựng tiếng Anh từ A0 đến B1 cùng Dango: flashcard, lặp lại ngắt quãng, nhật ký, trò chơi, luyện nghe nói và sưu tầm sticker.">
   <meta name="theme-color" content="#fff6ec">
+  <meta name="app-version" content="v8">
   <link rel="icon" type="image/png" href="icons/avatar-64.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -64,9 +65,13 @@
   <script src="js/data/texts.js"></script>
   <script src="js/data/texts-a0.js"></script>
   <script src="js/data/quiz.js"></script>
+  <script src="js/data/texts-situations.js"></script>
+  <script src="js/data/extras.js"></script>
+  <script src="js/data/irregular.js"></script>
   <script src="js/data/ipa.js"></script>
   <script src="js/data/emoji.js"></script>
   <script src="js/data/pairs.js"></script>
+  <script src="js/data/journal-topics.js"></script>
 
   <script src="js/data.js"></script>
   <script src="js/store.js"></script>
@@ -74,9 +79,26 @@
   <script src="js/tts.js"></script>
   <script src="js/mascot.js"></script>
   <script src="js/fx.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/writing.js"></script>
+  <script src="js/stickers.js"></script>
+  <script src="js/journal.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/verbs.js"></script>
   <script src="js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      // Đã có bản cũ đang chạy mà bản mới tiếp quản thì mời người dùng tải lại (lần cài đầu tiên thì không cần)
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || document.querySelector('.update-bar')) return;
+        const bar = document.createElement('button');
+        bar.type = 'button';
+        bar.className = 'update-bar';
+        bar.textContent = '✨ Có bản mới của hiuhf0, bấm để cập nhật';
+        bar.addEventListener('click', () => location.reload());
+        document.body.appendChild(bar);
+      });
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
   </script>

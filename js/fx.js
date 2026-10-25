@@ -161,19 +161,19 @@ const FX = (() => {
     const it = popQ.shift();
     if (!it) { popping = false; return; }
     popping = true;
-    sound('sticker');
-    haptic([10, 30, 10]);
+    sound(it.rarity === 'epic' || it.rarity === 'legend' ? 'levelup' : 'sticker');
+    haptic(it.rarity === 'legend' ? [15, 40, 15, 40, 30] : [10, 30, 10]);
     const el = document.createElement('div');
     let tm = 0;
     const close = () => { clearTimeout(tm); el.remove(); nextPop(); };
     el.className = 'sticker-pop';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', 'Sticker mới');
-    el.innerHTML = `<div class="sticker-pop-card"><p class="muted">Sticker mới!</p><div class="sticker-pop-i">${it.html}</div><h2>${it.name}</h2><p class="muted">${it.desc}</p><button class="btn primary" type="button">Tuyệt vời</button></div>`;
+    el.innerHTML = `<div class="sticker-pop-card ${it.rarity ? 'r-' + it.rarity : ''}"><p class="muted">Sticker mới!${it.label ? ` <span class="rarity-tag r-${it.rarity}">${it.label}</span>` : ''}</p><div class="sticker-pop-i">${it.html}</div><h2>${it.name}</h2><p class="muted">${it.desc}</p><button class="btn primary" type="button">Tuyệt vời</button></div>`;
     document.body.appendChild(el);
     el.addEventListener('click', close);
     tm = setTimeout(close, 4200);
-    confetti({ y: window.innerHeight * 0.4 });
+    confetti({ y: window.innerHeight * 0.4, count: it.rarity === 'legend' ? 140 : it.rarity === 'epic' ? 100 : undefined });
   }
 
   /* ----- Đếm số chạy lên (phần tử có data-count) ----- */

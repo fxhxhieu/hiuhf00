@@ -1,0 +1,9 @@
+{
+  "name": "hiuhf0",
+  "private": true,
+  "description": "Web học từ vựng tiếng Anh. Ứng dụng không cần bước build; package.json chỉ để chạy kiểm thử.",
+  "scripts": {
+    "test": "node --test",
+    "test:e2e": "node tests/e2e/run.js"
+  }
+}

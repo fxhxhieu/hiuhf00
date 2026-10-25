@@ -1,0 +1,8 @@
+{
+  "name": "hiuhf0-e2e",
+  "private": true,
+  "description": "Kiểm thử trình duyệt cho hiuhf0 (chỉ dùng khi phát triển, không ảnh hưởng ứng dụng).",
+  "devDependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

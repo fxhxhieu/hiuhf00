@@ -192,6 +192,31 @@ const Data = (() => {
   });
   const inTopic = (w, key) => w.topic === key || w.tags.indexOf(key) >= 0;
 
+  /* ----- Thông tin mở rộng: ví dụ thêm, cụm kết hợp, họ từ, ghi chú (js/data/extras.js) ----- */
+  String((typeof window !== 'undefined' && window.EXTRAS_RAW) || '').split('\n').forEach((line) => {
+    const t = line.trim();
+    if (!t || t.charAt(0) === '/') return;
+    const p = t.split('|').map((s) => s.trim());
+    if (p.length !== 6) { warnings.push('Dòng thông tin thêm sai định dạng: ' + t.slice(0, 40)); return; }
+    const w = byId.get(p[0]);
+    if (!w) { warnings.push('Thông tin thêm: không thấy từ ' + p[0]); return; }
+    const list = (s, sep) => (s ? s.split(sep).map((x) => x.trim()).filter(Boolean) : []);
+    w.more = { ex: [p[1], p[2]].filter(Boolean), coll: list(p[3], ';'), fam: list(p[4], ','), note: p[5] };
+  });
+
+  /* ----- Động từ bất quy tắc (js/data/irregular.js) ----- */
+  const irregular = [];
+  const irrMap = {};
+  String((typeof window !== 'undefined' && window.IRREGULAR_RAW) || '').split('\n').forEach((line) => {
+    const t = line.trim();
+    if (!t || t.charAt(0) === '/') return;
+    const p = t.split('|').map((s) => s.trim());
+    if (p.length !== 4 || p.some((s) => !s)) { warnings.push('Dòng động từ bất quy tắc sai định dạng: ' + t); return; }
+    const v = { base: p[0], v2: p[1], v3: p[2], vi: p[3] };
+    irregular.push(v);
+    irrMap[v.base] = v;
+  });
+
   function stems(t) {
     const out = [t];
     const add = (s) => { if (s.length > 1 && out.indexOf(s) < 0) out.push(s); };
@@ -224,5 +249,5 @@ const Data = (() => {
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, inTopic, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, inTopic, irregular, irrMap, warnings };
 })();

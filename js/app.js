@@ -56,12 +56,26 @@
   };
   const emojiHTML = (w) => (w && w.emoji && Store.settings.showEmoji !== false ? `<span class="emo" aria-hidden="true">${w.emoji}</span>` : '');
 
+  /* Phần "Xem thêm": ví dụ khác, cụm kết hợp, họ từ, ghi chú cho người Việt (dữ liệu ở js/data/extras.js) */
+  function moreHTML(w) {
+    const m = w.more;
+    if (!m) return '';
+    return `<details class="i-more"><summary>Xem thêm: ví dụ, cụm từ, họ từ</summary>
+      ${m.ex.map((e) => `<div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(e, w.word)}</span><button class="icon-btn sm" data-say="${esc(e)}" aria-label="Nghe câu ví dụ">🔊</button></div>`).join('')}
+      ${m.coll.length ? `<div class="i-line"><span class="tag">Cụm hay gặp</span>${m.coll.map((c) => `<span class="cchip">${esc(c)}</span>`).join('')}</div>` : ''}
+      ${m.fam.length ? `<div class="i-line"><span class="tag">Họ từ</span>${m.fam.map((c) => `<span class="fchip">${esc(c)}</span>`).join('')}</div>` : ''}
+      ${m.note ? `<p class="i-note">💡 ${esc(m.note)}</p>` : ''}</details>`;
+  }
+
   function infoHTML(w, showWord = true) {
+    const irr = w.pos === 'v' && Data.irrMap[w.word];
     return `<div class="info">
       ${showWord ? `<div class="i-word">${emojiHTML(w)}<span>${esc(w.word)}</span><span class="pos">${esc(w.pos)}</span>${ipaHTML(w)}<button class="icon-btn" data-say="${esc(w.word)}" aria-label="Phát âm từ ${esc(w.word)}">🔊</button></div>` : ''}
       <div class="i-vi">${esc(w.vi)}</div>
+      ${irr ? `<div class="i-forms"><span class="tag">Bất quy tắc</span>${esc(irr.base)} · <b>${esc(irr.v2)}</b> · <b>${esc(irr.v3)}</b></div>` : ''}
       ${w.def ? `<div class="i-def"><span class="tag">Anh–Anh</span>${esc(w.def)}</div>` : ''}
       ${w.ex ? `<div class="i-ex"><span class="tag">Ví dụ</span><span>${highlight(w.ex, w.word)}</span><button class="icon-btn sm" data-say="${esc(w.ex)}" aria-label="Nghe câu ví dụ">🔊</button></div>` : ''}
+      ${moreHTML(w)}
     </div>`;
   }
 
@@ -95,7 +109,7 @@
   }
 
   /* ================= Định tuyến ================= */
-  const routes = { learn: renderLearn, library: renderLibrary, path: renderPath, placement: renderPlacement, topics: renderTopics, practice: renderPractice, more: renderMore, progress: renderProgress, stickers: renderStickers, listen: renderListen, speak: renderSpeak, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
+  const routes = { learn: renderLearn, library: renderLibrary, path: renderPath, placement: renderPlacement, topics: renderTopics, practice: renderPractice, more: renderMore, progress: renderProgress, listen: renderListen, speak: renderSpeak, sound: renderSound, shadow: renderShadow, read: renderRead, settings: renderSettings };
   // Mục điều hướng nào sáng lên ở mỗi trang
   const NAV_OF = { placement: 'path', topics: 'library', listen: 'practice', speak: 'practice', sound: 'practice', shadow: 'practice', progress: 'more', stickers: 'more', read: 'more', settings: 'more' };
   let currentRoute = 'learn';
@@ -123,7 +137,7 @@
       if (Object.keys(Store.get().cards).length) { Store.settings.onboarded = true; Store.save(); }
       else { renderWelcome(); FX.anim(view, 'enter'); window.scrollTo(0, 0); return; }
     }
-    routes[name](parts[1]);
+    routes[name](parts[1], parts[2]);
     FX.anim(view, 'enter');
     window.scrollTo(0, 0);
   }
@@ -171,7 +185,8 @@
       hasLearned: fresh < Data.words.length,
       goal: Math.max(1, set.newPerDay),
       listenToday: log.l || 0,
-      streak: Store.streak()
+      streak: Store.streak(),
+      freeze: Store.streakInfo()
     };
   }
 
@@ -206,15 +221,27 @@
       <button class="btn sm ${t.done ? '' : 'primary'}" id="${t.act}" ${t.off ? 'disabled' : ''}>${esc(t.btn)}</button>
     </li>`;
 
-  /* Biểu cảm và lời nhắn của Dango theo tình hình học hôm nay */
+  /* Biểu cảm và lời nhắn của Dango theo tình hình học hôm nay (mỗi tình huống có nhiều câu để đỡ lặp) */
+  const LINES = {
+    done: ['Giỏi quá! Hôm nay bạn xong hết rồi!', 'Dango tự hào về bạn lắm đó!', 'Xong hết rồi, nghỉ ngơi xứng đáng nhé!', 'Cả ba việc đều xong, bạn đỉnh thật!', 'Hôm nay trọn vẹn rồi. Hẹn mai gặp lại nhé!'],
+    first: ['Mình là Dango! Cùng học từ đầu tiên nhé.', 'Chào bạn mới! Mình sẽ đi cùng bạn nhé.', 'Bắt đầu thôi nào, từ nào cũng có ngày thuộc!'],
+    night: ['Khuya rồi, học một chút rồi đi ngủ nhé.', 'Dango buồn ngủ rồi... học nhanh thôi nha.', 'Ngủ đủ giấc giúp nhớ từ lâu hơn đó!', 'Học đêm cũng được, nhớ nghỉ ngơi nhé.'],
+    many: ['Có {n} thẻ đang chờ, mình ôn từng chút nhé.', '{n} thẻ đang đợi bạn. Từng chút một thôi!', 'Nhiều thẻ quá, nhưng mình làm được mà!'],
+    streak: ['Chuỗi {streak} ngày rồi, đừng để đứt nhé!', 'Ngày thứ {streak} liên tiếp, bạn giỏi ghê!', 'Dango thích chuỗi {streak} ngày của bạn lắm.'],
+    morning: ['Chào buổi sáng! Hôm nay học gì nào?', 'Buổi sáng nhớ từ mới nhanh lắm đó!', 'Dậy sớm rồi, giỏi quá! Học một chút nhé?', 'Sáng nay mình học vài từ cho vui nha.'],
+    afternoon: ['Chào buổi chiều! Học một lượt nhé?', 'Buổi chiều rồi, nghỉ tay học chút nào!', 'Dango rủ bạn ôn vài thẻ nè.', 'Một lượt ngắn thôi cũng được!'],
+    evening: ['Chào buổi tối! Ôn lại một chút trước khi ngủ nhé.', 'Tối nay mình học gì đây?', 'Ôn trước khi ngủ giúp nhớ lâu hơn đó!', 'Một ngày dài rồi, học nhẹ nhàng thôi nhé.']
+  };
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
   function mood(s, allDone) {
     const h = new Date().getHours();
-    if (allDone) return ['cheer', 'Giỏi quá! Hôm nay bạn xong hết rồi!'];
-    if (!s.hasLearned) return ['happy', 'Mình là Dango! Cùng học từ đầu tiên nhé.'];
-    if (h >= 23 || h < 5) return ['sleepy', 'Khuya rồi, học một chút rồi đi ngủ nhé.'];
-    if (s.due > 30) return ['think', `Có ${s.due} thẻ đang chờ, mình ôn từng chút nhé.`];
-    if (s.streak >= 3 && s.daily.newDone + s.daily.reviewDone === 0) return ['love', `Chuỗi ${s.streak} ngày rồi, đừng để đứt nhé!`];
-    return ['happy', greeting() + '! Hôm nay học gì nào?'];
+    const fill = (x) => x.replace('{n}', s.due).replace('{streak}', s.streak);
+    if (allDone) return ['cheer', pick(LINES.done)];
+    if (!s.hasLearned) return ['happy', pick(LINES.first)];
+    if (h >= 23 || h < 5) return ['sleepy', pick(LINES.night)];
+    if (s.due > 30) return ['think', fill(pick(LINES.many))];
+    if (s.streak >= 3 && s.daily.newDone + s.daily.reviewDone === 0) return ['love', fill(pick(LINES.streak))];
+    return ['happy', pick(h < 11 ? LINES.morning : h < 18 ? LINES.afternoon : LINES.evening)];
   }
 
   function renderLearn() {
@@ -225,13 +252,15 @@
     const allDone = active.length > 0 && doneN === active.length && s.daily.newDone + s.daily.reviewDone + s.listenToday > 0;
     checkBadges(allDone ? ['day-complete'] : undefined);
     const [expr, msg] = mood(s, allDone);
+    const yday = new Date(); yday.setDate(yday.getDate() - 1);
+    const yesterdayFrozen = s.freeze.frozen.indexOf(Store.dayKey(yday.getTime())) >= 0;
     const hardList = Data.words.filter(isHard);
     const hardTop = hardList.slice().sort((a, b) => hardScore(b) - hardScore(a)).slice(0, 6)
       .map((w) => `<span class="hardw">${esc(w.word)}${w.ipa ? ` <small>/${esc(w.ipa)}/</small>` : ''}</span>`).join('');
 
     view.innerHTML = `
       <section class="hero card today">
-        <div class="dango-wrap">${Mascot.svg(expr, 104)}</div>
+        <div class="dango-wrap">${App.stickers ? App.stickers.dango(expr, 104) : Mascot.svg(expr, 104)}</div>
         <div class="hero-main">
           <p class="bubble">${esc(msg)}</p>
           <div class="today-bar"><div class="progress"><i style="width:${active.length ? Math.round((doneN / active.length) * 100) : 0}%"></i></div><b>${doneN}/${active.length}</b></div>
@@ -240,12 +269,15 @@
         <div class="streak" aria-label="Chuỗi ngày học liên tiếp"><span class="flame" aria-hidden="true">🔥</span><b>${s.streak}</b><span>ngày liên tiếp</span></div>
       </section>
 
+      ${yesterdayFrozen ? '<p class="notice">❄️ Dango đã giữ chuỗi cho ngày hôm qua. Mỗi 7 ngày Dango giữ giúp bạn một ngày lỡ.</p>' : ''}
       ${backupReminder()}
 
       <section class="card">
         <div class="card-h"><h2>Việc hôm nay</h2><span class="muted">${s.tom ? `Ngày mai có ${s.tom} thẻ cần ôn` : 'xong cả ba để nhận sticker 🌈'}</span></div>
         <ul class="tasks">${tasks.map(taskHTML).join('')}</ul>
       </section>
+
+      ${App.slots.today.map((f) => f(s)).join('')}
 
       ${pathCardHTML()}
 
@@ -258,6 +290,7 @@
       <p class="center"><a class="btn ghost" href="#progress">📊 Xem tiến độ chi tiết</a></p>`;
 
     view.onclick = (e) => {
+      if (App.clicks.some((h) => h(e))) return;
       const t = e.target.closest('button');
       if (!t || t.disabled) return;
       FX.sound('tap');
@@ -309,8 +342,7 @@
     }
     const max = Math.max(10, ...days.map((x) => x.n));
     const chart = days.map((x) => `<div class="bar" title="${x.n} lượt"><i style="height:${Math.max(3, (x.n / max) * 100)}%"></i><span>${x.w}</span></div>`).join('');
-    const have = Store.get().badges;
-    const stickers = allStickers();
+    const sc = App.stickers ? App.stickers.counts() : { have: 0, total: 0 };
 
     view.innerHTML = `
       <section class="page-h"><h1>Tiến độ</h1><p class="muted">Mọi con số về việc học của bạn ở một chỗ.</p></section>
@@ -350,10 +382,21 @@
       </section>
 
       <section class="card row between wrap">
-        <div><h2>Sổ sticker</h2><p class="muted">${stickers.filter((b) => have[b.id]).length}/${stickers.length} sticker đã sưu tầm</p></div>
+        <div><h2>Chuỗi ngày học</h2><p class="muted">${Store.streak()} ngày liên tiếp</p></div>
+        <button class="btn" id="share-streak">📸 Chia sẻ ảnh chuỗi ngày</button>
+      </section>
+
+      <section class="card row between wrap">
+        <div><h2>Sổ sticker</h2><p class="muted">${sc.have}/${sc.total} sticker đã sưu tầm</p></div>
         <a class="btn primary" href="#stickers">🎀 Mở sổ sticker</a>
       </section>`;
     FX.countUp(view);
+    view.onclick = async (e) => {
+      if (!e.target.closest('#share-streak')) return;
+      const n = Store.streak();
+      const r = await Share.share({ title: n + ' ngày học liên tiếp', subtitle: 'Mình đang học từ vựng tiếng Anh cùng Dango', emoji: '🔥', tag: 'Chuỗi ngày' });
+      if (r !== 'cancel') { Store.bump('shared'); checkBadges(); toast(r === 'saved' ? 'Đã tải ảnh về máy.' : 'Đã chia sẻ!'); }
+    };
   }
 
   /* ================= LUYỆN & THÊM: hai trang tổng hợp ================= */
@@ -364,6 +407,7 @@
     view.innerHTML = `
       <section class="page-h row"><div class="dango-wrap sm">${Mascot.svg('wow', 64)}</div><div><h1>Luyện tập</h1><p class="muted">Luyện tai, luyện miệng, nói chuyện tự nhiên hơn.</p></div></section>
       <div class="hubgrid">
+        ${App.hubs.practice.map((f) => f()).join('')}
         ${hubTile('#listen', '🎧', 'Nghe', '8 chế độ: nghe chọn nghĩa, viết từ, số, giờ, hội thoại…', 'sky')}
         ${hubTile('#speak', '🎤', 'Nói', 'Đọc to từng từ, máy chấm và gợi ý đặt lưỡi', 'pink')}
         ${hubTile('#sound', '👄', 'Phát âm', 'Cặp âm dễ nhầm: ship và sheep, light và right', 'mint')}
@@ -374,13 +418,14 @@
   }
 
   function renderMore() {
-    const stickers = allStickers(), have = Store.get().badges;
+    const sc = App.stickers ? App.stickers.counts() : { have: 0, total: 0 };
     view.innerHTML = `
-      <section class="page-h row"><div class="dango-wrap sm">${Mascot.svg('love', 64)}</div><div><h1>Thêm</h1><p class="muted">Dịch bài, xem tiến độ, sưu tầm sticker và chỉnh cài đặt.</p></div></section>
+      <section class="page-h row"><div class="dango-wrap sm">${Mascot.svg('love', 64, '', { acc: Store.settings.dangoAcc })}</div><div><h1>Thêm</h1><p class="muted">Dịch bài, xem tiến độ, sưu tầm sticker và chỉnh cài đặt.</p></div></section>
       <div class="hubgrid">
+        ${App.hubs.more.map((f) => f()).join('')}
         ${hubTile('#read', '📖', 'Dịch bài', 'Bấm vào từ để tra nghĩa, dịch từng câu', 'sky')}
         ${hubTile('#progress', '📊', 'Tiến độ', 'Cấp thuộc, lịch ôn sắp tới, biểu đồ 14 ngày', 'mint')}
-        ${hubTile('#stickers', '🎀', 'Sổ sticker', `${stickers.filter((b) => have[b.id]).length}/${stickers.length} sticker đã sưu tầm`, 'pink')}
+        ${hubTile('#stickers', '🎀', 'Sổ sticker', `${sc.have}/${sc.total} sticker đã sưu tầm`, 'pink')}
         ${hubTile('#placement', '🧭', 'Xếp trình độ', 'Làm bài ngắn để bỏ qua phần bạn đã biết', 'sun')}
         ${hubTile('#settings', '⚙️', 'Cài đặt', 'Giao diện, hiệu ứng, giọng đọc, sao lưu', 'lilac')}
       </div>`;
@@ -472,7 +517,10 @@
     if (!S) return;
     S.combo = ok ? (S.combo || 0) + 1 : 0;
     if (S.combo === 5) FX.chip('🔥 Combo 5!');
-    if (S.combo === 10) { FX.chip('⚡ Combo 10!'); FX.confetti({ count: 40 }); checkBadges(['combo-10']); }
+    if (S.combo === 10) { FX.chip('⚡ Combo 10!'); FX.confetti({ count: 40 }); }
+    if (S.combo === 20) FX.chip('💥 Combo 20!');
+    if (S.combo === 50) { FX.chip('🌋 Combo 50!'); FX.confetti(); }
+    if (S.combo === 10 || S.combo === 20 || S.combo === 50) checkBadges(['combo-' + S.combo]);
   }
 
   /* Trả lời đúng nhờ nhận ra (trắc nghiệm) hoặc phải gõ lại lần hai thì khoảng cách tăng chậm hơn */
@@ -711,6 +759,7 @@
       return renderCard();
     }
     const now = Date.now();
+    const wasHard = isHard(w);
     let nc;
     let ok = true;
     if (cur.checkKnown) {
@@ -729,6 +778,7 @@
       Store.logReview(false, ok);
     }
     Store.setCard(w.id, nc);
+    if (wasHard && SRS.level(nc) === 5) { Store.bump('hardBeaten'); checkBadges(); }
     if (ok && Store.get().flagged[w.id]) Store.flag(w.id, -1);
     if (cur.kind !== 'intro') {
       S.answered += 1;
@@ -789,7 +839,11 @@
       if (b.id === 'more-new') startSession('new', 10);
     };
     if (stars >= 2) { FX.confetti(); FX.sound('complete'); FX.haptic([15, 30, 15]); }
-    if (stars === 3) checkBadges(['three-star']);
+    const extra = [];
+    if (stars === 3) { Store.bump('starRun'); extra.push('three-star'); } else if (answered) Store.setStat('starRun', 0);
+    if (answered >= 20 && acc === 100) extra.push('perfect-session');
+    if (answered >= 5 && Math.random() < 0.02) extra.push('secret-lucky'); // Dango tặng quà bất ngờ
+    checkBadges(extra);
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1213,108 +1267,9 @@
     nextCard();
   }
 
-  /* ================= STICKER (huy hiệu) ================= */
-  const BADGES = [
-    { id: 'first-word', icon: '🌱', mascot: 'happy', name: 'Từ đầu tiên', desc: 'Học từ vựng đầu tiên', ok: (c) => c.cards >= 1 },
-    { id: 'words-100', icon: '📘', name: '100 từ đầu tiên', desc: 'Đã gặp 100 từ', ok: (c) => c.cards >= 100 },
-    { id: 'words-500', icon: '📚', name: '500 từ', desc: 'Đã gặp 500 từ', ok: (c) => c.cards >= 500 },
-    { id: 'words-1000', icon: '🏆', mascot: 'wow', name: '1.000 từ', desc: 'Đã gặp 1.000 từ', ok: (c) => c.cards >= 1000 },
-    { id: 'master-50', icon: '⭐', name: '50 từ thuộc lòng', desc: '50 từ ở cấp 5', ok: (c) => c.mastered >= 50 },
-    { id: 'master-200', icon: '🌟', name: '200 từ thuộc lòng', desc: '200 từ ở cấp 5', ok: (c) => c.mastered >= 200 },
-    { id: 'streak-3', icon: '🔥', name: '3 ngày liên tiếp', desc: 'Học 3 ngày liên tiếp', ok: (c) => c.streak >= 3 },
-    { id: 'streak-7', icon: '🚀', mascot: 'cheer', name: '7 ngày liên tiếp', desc: 'Học 7 ngày liên tiếp', ok: (c) => c.streak >= 7 },
-    { id: 'streak-30', icon: '💎', mascot: 'love', name: '30 ngày liên tiếp', desc: 'Học 30 ngày liên tiếp', ok: (c) => c.streak >= 30 },
-    { id: 'listen-50', icon: '👂', name: '50 câu nghe', desc: 'Làm 50 câu luyện nghe', ok: (c) => c.listenN >= 50 },
-    { id: 'listen-300', icon: '🎧', name: '300 câu nghe', desc: 'Làm 300 câu luyện nghe', ok: (c) => c.listenN >= 300 },
-    { id: 'listen-perfect', icon: '🎯', name: 'Nghe chuẩn', desc: 'Một lượt nghe đúng cả 10 câu', ok: () => false },
-    { id: 'unit-1', icon: '🚪', name: 'Bài đầu tiên', desc: 'Hoàn thành một bài lộ trình', ok: (c) => c.units >= 1 },
-    { id: 'unit-10', icon: '🗺️', name: '10 bài lộ trình', desc: 'Hoàn thành 10 bài', ok: (c) => c.units >= 10 },
-    { id: 'a0-done', icon: '🎓', name: 'Xong cấp A0', desc: 'Hoàn thành mọi bài nhập môn', ok: (c) => c.a0Done },
-    { id: 'test-100', icon: '🥇', name: 'Điểm tuyệt đối', desc: 'Đạt 100% ở một bài kiểm tra', ok: () => false },
-    { id: 'speak-1', icon: '🎤', name: 'Lần đầu luyện nói', desc: 'Hoàn thành một lượt luyện nói', ok: (c) => c.speakN >= 1 },
-    { id: 'speak-30', icon: '🗣️', name: '30 từ đọc chuẩn', desc: 'Đọc đúng 30 từ', ok: (c) => c.speakOk >= 30 },
-    { id: 'day-complete', icon: '🌈', mascot: 'cheer', name: 'Ngày trọn vẹn', desc: 'Xong cả ba việc trong một ngày', ok: () => false },
-    { id: 'combo-10', icon: '⚡', name: 'Combo 10', desc: '10 câu đúng liên tiếp trong một phiên', ok: () => false },
-    { id: 'three-star', icon: '🌟', name: 'Ba sao', desc: 'Một phiên học đạt 3 sao', ok: () => false },
-    { id: 'my-word', icon: '💫', name: 'Từ của riêng mình', desc: 'Thêm từ đầu tiên vào “Từ của tôi”', ok: (c) => c.custom >= 1 },
-    { id: 'placed', icon: '🧭', name: 'Biết mình ở đâu', desc: 'Làm xong bài xếp trình độ', ok: () => false }
-  ];
-
-  /* Mỗi chủ đề có hai sticker: khám phá (đã học 90% từ) và vững (80% từ ở cấp 4 trở lên) */
+  /* ================= STICKER: logic nằm ở js/stickers.js (nạp trước app.js, đăng ký qua AppModules) ================= */
   const topicName = (t) => t.vi.split(/[:,&]/)[0].trim();
-  function topicStickers() {
-    const out = [];
-    liveTopics().forEach((t) => {
-      out.push({ id: `topic-${t.key}-1`, icon: t.icon, topic: t.key, tier: 1, name: `${topicName(t)}: khám phá`, desc: 'Đã học 90% từ của chủ đề' });
-      out.push({ id: `topic-${t.key}-2`, icon: t.icon, topic: t.key, tier: 2, name: `${topicName(t)}: vững`, desc: '80% từ của chủ đề đã lên cấp Vững' });
-    });
-    return out;
-  }
-  const allStickers = () => BADGES.concat(topicStickers());
-
-  function badgeCtx() {
-    const st = Store.get();
-    let mastered = 0;
-    Data.words.forEach((w) => { if (SRS.level(st.cards[w.id] || null) === 5) mastered++; });
-    const a0 = Data.units.filter((u) => u.level === 'A0');
-    return {
-      cards: Object.keys(st.cards).length,
-      mastered,
-      streak: Store.streak(),
-      listenN: Object.keys(st.listen).reduce((a, k) => a + (st.listen[k].n || 0), 0),
-      units: Data.units.filter((u) => unitDone(u) && !unitState(u).placed).length, // bài được bỏ qua nhờ xếp trình độ không tính huy hiệu
-      a0Done: a0.length > 0 && a0.every((u) => unitDone(u) && !unitState(u).placed),
-      speakN: st.speak.n,
-      speakOk: st.speak.ok,
-      custom: st.custom.length
-    };
-  }
-
-  const stickerArt = (b, size) => (b.mascot ? Mascot.svg(b.mascot, size || 64) : `<span class="sticker-emo" aria-hidden="true">${b.icon}</span>`);
-
-  function checkBadges(extraIds) {
-    const c = badgeCtx();
-    const ts = topicStats();
-    const got = [];
-    BADGES.forEach((b) => {
-      const earned = (extraIds && extraIds.indexOf(b.id) >= 0) || b.ok(c);
-      if (earned && Store.award(b.id)) got.push(b);
-    });
-    topicStickers().forEach((b) => {
-      const o = ts[b.topic];
-      if (!o || o.n < 5) return;
-      const earned = b.tier === 1 ? o.seen >= o.n * 0.9 : o.strong >= o.n * 0.8;
-      if (earned && Store.award(b.id)) got.push(b);
-    });
-    if (!got.length) return;
-    // Nhận nhiều sticker cùng lúc (ví dụ người dùng cũ mở bản mới) thì gộp thành một thông báo
-    if (got.length > 3) FX.stickerPop([{ html: stickerArt(got[0], 84), name: `${got.length} sticker mới`, desc: 'Mở Sổ sticker để xem tất cả nhé.' }]);
-    else FX.stickerPop(got.map((b) => ({ html: stickerArt(b, 84), name: esc(b.name), desc: esc(b.desc) })));
-  }
-
-  function stickerHTML(b, have, extra) {
-    const rot = ((b.id.length * 7 + b.id.charCodeAt(b.id.length - 1)) % 9) - 4;
-    return `<div class="sticker ${have ? 'got' : ''}" style="--rot:${rot}deg" title="${esc(b.desc)}">
-      <div class="sticker-i">${have ? stickerArt(b, 64) : '<span class="sticker-emo" aria-hidden="true">🔒</span>'}</div>
-      <b>${esc(b.name)}</b><small class="muted">${esc(extra || b.desc)}</small></div>`;
-  }
-
-  function renderStickers() {
-    const have = Store.get().badges;
-    const ts = topicStats();
-    const list = allStickers();
-    const n = list.filter((b) => have[b.id]).length;
-    const topicHTML = topicStickers().map((b) => {
-      const o = ts[b.topic] || { n: 0, seen: 0, strong: 0 };
-      return stickerHTML(b, have[b.id], b.tier === 1 ? `${o.seen}/${o.n} từ đã học` : `${o.strong}/${o.n} từ ở cấp Vững`);
-    }).join('');
-    view.innerHTML = `
-      <a class="back" href="#more">‹ Thêm</a>
-      <section class="page-h row"><div class="dango-wrap sm">${Mascot.svg(n ? 'love' : 'happy', 72)}</div><div><h1>Sổ sticker</h1><p class="muted"><span data-count="${n}">${n}</span>/${list.length} sticker. Học và luyện để sưu tầm thêm!</p></div></section>
-      <section class="card"><h2>Thành tích</h2><div class="stickers">${BADGES.map((b) => stickerHTML(b, have[b.id])).join('')}</div></section>
-      <section class="card"><h2>Chủ đề</h2><p class="hint">Học 90% từ của một chủ đề để nhận sticker khám phá, đưa 80% từ lên cấp Vững để nhận sticker vững.</p><div class="stickers">${topicHTML}</div></section>`;
-    FX.countUp(view);
-  }
+  const checkBadges = (ids) => { if (App.stickers) App.stickers.check(ids); };
 
   /* ================= LUYỆN NÓI: đọc từ, chấm và gợi ý theo từng âm ================= */
   let SP = null;
@@ -2718,6 +2673,7 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     Store.settings.lastBackup = Date.now();
     Store.save();
+    checkBadges();
   }
 
   /* Nhắc sao lưu khi đã có tiến độ đáng kể và quá 7 ngày chưa sao lưu (bấm "Để sau" thì nhắc lại sau 3 ngày) */
@@ -2753,6 +2709,7 @@
     if (currentRoute === 'settings') { const el = document.getElementById('s-usage'); if (el) el.innerHTML = usageHTML(); }
   }, 1000);
 
+  const skinBit = (k) => ({ matcha: 1, sakura: 2, sky: 4 }[k] || 0);
   const SKINS = [['matcha', 'Matcha', '🍵'], ['sakura', 'Sakura', '🌸'], ['sky', 'Bầu trời', '☁️']];
   const FX_LEVELS = [['full', 'Đầy đủ', '✨'], ['light', 'Nhẹ', '🌿'], ['off', 'Tắt', '🌙']];
 
@@ -2823,7 +2780,7 @@
       else if (id === 's-emoji') s.showEmoji = e.target.checked;
       else if (id === 's-unlock') s.unlockAll = e.target.checked;
       else if (id === 's-voice') s.voice = e.target.value;
-      else if (id === 's-sound') { s.sound = e.target.checked; if (s.sound) FX.sound('correct'); }
+      else if (id === 's-sound') { s.sound = e.target.checked; if (s.sound) { FX.sound('correct'); Store.bump('soundUsed'); checkBadges(); } }
       else if (id === 's-haptic') { s.haptics = e.target.checked; if (s.haptics) FX.haptic(30); }
       else if (id === 's-theme') { s.theme = e.target.value; applyTheme(); }
       else if (id === 's-import') {
@@ -2852,7 +2809,7 @@
       const b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.skin || b.dataset.fx) {
-        if (b.dataset.skin) s.skin = b.dataset.skin; else s.fx = b.dataset.fx;
+        if (b.dataset.skin) { s.skin = b.dataset.skin; Store.setStat('skinMask', Store.stat('skinMask') | skinBit(s.skin)); checkBadges(); } else s.fx = b.dataset.fx;
         Store.save(); FX.apply(); if (FX.full()) FX.decor();
         $$(b.dataset.skin ? '#s-skin .chip' : '#s-fx .chip').forEach((c) => c.setAttribute('aria-pressed', c === b));
         FX.sound('tap');
@@ -2873,6 +2830,18 @@
   Data.setCustom(Store.get().custom);
   applyTheme();
   window.addEventListener('hashchange', route);
+  /* Các mô-đun nạp trước app.js (stickers, nhật ký, trò chơi...) đăng ký bằng AppModules.push((App) => {...})
+   * và nhận bộ tiện ích này. Chúng thêm trang vào App.routes, thêm mục sáng ở App.NAV_OF, và gắn nội dung
+   * vào trang Hôm nay qua App.slots.today (trả về HTML) và App.clicks (xử lý bấm trong trang Hôm nay). */
+  const App = window.App = {
+    $, $$, esc, view, toast, routes, NAV_OF, goBack, shuffle, sampleN, ipaHTML, emojiHTML, lvBadge, mvBadge, hubTile, openSheet,
+    topicOf, topicName, liveTopics, topicStats, snapshot, greeting, exportBackup, startSession, startListen, isHard, closeSheet,
+    unitDone, unitState, startTopicSession, currentRoute: () => currentRoute, rerender: () => route(), checkBadges,
+    slots: { today: [] }, clicks: [], hubs: { more: [], practice: [] }
+  };
+  Store.setStat('skinMask', Store.stat('skinMask') | skinBit(Store.settings.skin || 'matcha')); // giao diện đang dùng tính là đã thử
+  (window.AppModules || []).forEach((init) => init(App));
+
   window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L, speak: () => SP, placement: () => PL };
   route();
 })();

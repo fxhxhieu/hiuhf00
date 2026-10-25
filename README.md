@@ -6,9 +6,17 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 
 - **Giao diện "mochi dango"**: nền kem ấm, nút nổi kiểu chunky, font Nunito (tải sẵn trong repo, dùng được offline). Linh vật **Dango** (xiên bánh mochi hồng, trắng, xanh) có 7 biểu cảm, chào bạn mỗi ngày, đổi mặt theo từng câu trả lời và ăn mừng khi xong phiên. Ba giao diện màu **Matcha, Sakura, Bầu trời**, mỗi cái có chế độ sáng và tối.
 - **Hiệu ứng vui mắt** (Cài đặt, mục "Hiệu ứng": Đầy đủ, Nhẹ, Tắt): thẻ nảy kiểu thạch khi đúng, rung nhẹ khi sai, lấp lánh, pháo giấy, chip lên cấp, sao cuối phiên, họa tiết nền trôi chậm. Tự tắt khi hệ điều hành bật "giảm chuyển động". **Âm thanh** (Web Audio, không cần file) và **rung** trên điện thoại mặc định tắt, bật trong Cài đặt.
-- **Trang Hôm nay**: Dango, thanh tiến độ ngày và ba việc nhỏ (ôn thẻ, học từ mới, một lượt nghe). Xong cả ba nhận sticker "Ngày trọn vẹn". Trang **Tiến độ** có thống kê, lịch ôn, biểu đồ 14 ngày; trang **Luyện** gom Nghe, Nói, Phát âm, Shadowing; trang **Thêm** gom Dịch bài, Tiến độ, Sổ sticker, Xếp trình độ, Cài đặt (thanh điều hướng còn 5 mục).
-- **Sổ sticker**: 23 sticker thành tích (một số là Dango tạo dáng) cùng 2 sticker cho mỗi chủ đề (khám phá khi học 90% từ, vững khi 80% từ lên cấp 4 trở lên). Nhận sticker thì sticker bật ra giữa màn hình kèm pháo giấy.
+- **Trang Hôm nay**: Dango, thanh tiến độ ngày và ba việc nhỏ (ôn thẻ, học từ mới, một lượt nghe). Xong cả ba nhận sticker "Ngày trọn vẹn". Trang **Tiến độ** có thống kê, lịch ôn, biểu đồ 14 ngày; trang **Luyện** gom Nghe, Nói, Phát âm, Shadowing; trang **Thêm** gom Dịch bài, Tiến độ, Sổ sticker, Xếp trình độ, Cài đặt (thanh điều hướng còn 5 mục). Trang Hôm nay còn có thẻ Từ của ngày, Nhật ký hôm nay và sticker đã ghim; mỗi trang đều có thể chèn thêm ô qua cơ chế mô-đun (xem phần Cấu trúc).
+- **Sổ sticker (167 sticker)**: bốn độ hiếm (Thường, Hiếm, Sử thi, Huyền thoại, hạng cao có ánh kim). Gồm 82 thành tích (thói quen, học từ, luyện tập, lộ trình, nhật ký, trò chơi, khám phá), 11 sticker **theo dịp lễ** chỉ nhận khi học đúng ngày (Tết, Trung thu, Giáng sinh, Halloween…), 3 sticker **bí mật** (ví dụ chạm vào Dango 10 lần) và 2 sticker cho mỗi chủ đề trong đó Dango mặc đồ theo chủ đề (đầu bếp, phi công, bác sĩ…). Bấm vào sticker để xem chi tiết, **ghim** tối đa 3 cái lên trang Hôm nay hoặc **chia sẻ ảnh**.
+- **Tủ đồ của Dango**: 24 phụ kiện, mỗi sticker mở một món; món bạn chọn hiện trên trang Hôm nay. **Album từ vựng**: mỗi từ thuộc lòng (cấp 5) có emoji thành một hình trong album 618 hình.
+- **Dango giữ chuỗi**: mỗi cửa sổ 7 ngày được bỏ qua một ngày lỡ mà không đứt chuỗi.
+- **Chia sẻ ảnh**: tạo ảnh PNG ngay trên máy cho sticker, chuỗi ngày, trang nhật ký (Web Share nếu máy hỗ trợ, không thì tải về).
 - **Chủ đề**: màn hình lưới chủ đề có % đã học; bấm vào để **học cả chủ đề** (10 từ mới mỗi lượt) hoặc ôn các thẻ đến hạn của chủ đề. Một từ có thể thuộc nhiều chủ đề (ví dụ *fish* vừa là Ăn uống vừa là Động vật). Thẻ chưa có emoji riêng dùng biểu tượng chủ đề làm sticker.
+- **Nhật ký tiếng Anh mỗi ngày**: 23 chủ đề (hôm nay, biết ơn, ước mơ, ăn uống, gia đình, du lịch, kỷ niệm, điều mới học được…) mỗi chủ đề có gợi ý đề, câu mở đầu và mẫu điền chỗ trống. **Trợ giúp viết** chạy hoàn toàn trên máy: chèn câu mở đầu, tra từ bằng nghĩa tiếng Việt, từ theo chủ đề, **kiểm tra lỗi cơ bản** (viết hoa, a/an, chủ ngữ và động từ, lỗi hay gặp của người Việt) kèm giải thích tiếng Việt và nút "Sửa", **dịch nhanh** từ tiếng Việt lẫn trong bài, thử thách dùng 3 từ, viết nhanh 3 phút, nghe lại bài viết. Có tâm trạng, lịch tháng, "nhìn lại" một tuần/tháng/năm trước, **thử thách 7 ngày**, **thư gửi tương lai** (niêm phong, đến ngày mới mở được), mã PIN che nội dung, tải file .txt. Bài lưu trong trình duyệt và nằm trong file sao lưu.
+- **Trò chơi**: Ghép cặp (hình với từ), Nối từ (từ với nghĩa), Đoán chữ (kiểu treo cổ có Dango). Thẻ **Từ của ngày** ở trang Hôm nay.
+- **Động từ bất quy tắc**: bảng 86 động từ (lọc theo kiểu biến đổi, tra bằng nghĩa tiếng Việt) và luyện gõ quá khứ, phân từ hai; dạng bất quy tắc cũng hiện trong thông tin của từ.
+- **Thông tin mở rộng cho 92 từ thông dụng**: ví dụ thêm, cụm kết hợp, họ từ và ghi chú lỗi người Việt hay mắc (nút "Xem thêm" trong thư viện và thẻ tra từ).
+- **6 hội thoại tình huống** (nhà hàng, khách sạn, sân bay, đi khám, hỏi đường, gọi điện) dùng được cho Shadowing, Dịch bài và Nghe hiểu hội thoại.
 - **Chủ đề mới và 198 từ mới**: Động vật, Thời tiết, Số đếm, Lịch, Thể thao, Nghề nghiệp, Phương tiện, Thói quen hằng ngày, và 6 chủ đề **tình huống giao tiếp** (nhà hàng, khách sạn, sân bay, đi khám, hỏi đường, gọi điện) gồm 73 câu ngắn dùng được ngay.
 - **Học kiểu Mochi, hệ thống tự xếp cấp**: không cần chọn bộ thẻ. Từ mới đi qua ba bước: lật thẻ, Nghe & chọn, Nghe & viết. Mỗi từ tự được xếp vào cấp 0 đến 5 (Mới, Mới gặp, Nhận ra, Nhớ được, Vững, Thuộc lòng). Cấp 2 là "đã qua bài trong phiên, chờ ôn lại sau ít nhất 1 ngày"; chỉ khi nhớ đúng lúc ôn lại mới lên cấp 3 trở lên. Từ cấp 4 trở lên phải gõ ra khi ôn, cấp 5 cần khoảng cách từ 21 ngày và ôn đúng 2 lần liên tiếp.
 - **Học và ôn**: các nút Ôn tập ngay, Học từ mới, Học thêm 10 từ mới nằm ở trang Hôm nay. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (phím tắt 1 và 2). Với từ chưa học, "Đã nhớ rõ từ" phải qua một câu nghe và gõ lại thì mới lên thẳng cấp 5. Cuối phiên có danh sách từ cần chú ý.
@@ -54,7 +62,7 @@ Chạy thử trên máy: mở thư mục bằng một server tĩnh bất kỳ, v
 index.html
 css/style.css
 fonts/        font Nunito (OFL) tải sẵn để chạy offline
-tests/        kiểm thử bằng node --test (srs.test.js, data.test.js)
+tests/        kiểm thử: node --test (srs, data, writing) và tests/e2e (trình duyệt thật)
 js/
   app.js       giao diện và các màn hình
   srs.js       thuật toán lặp lại ngắt quãng và cách xếp cấp thuộc
@@ -62,6 +70,13 @@ js/
   tts.js       đọc to bằng Web Speech API
   mascot.js    Dango bằng SVG nhúng (7 biểu cảm)
   fx.js        hiệu ứng, âm thanh, rung, sticker bật ra
+  share.js     tạo ảnh PNG chia sẻ bằng canvas
+  writing.js   trợ giúp viết: đếm từ, kiểm tra lỗi cơ bản (hàm thuần, có test)
+  stickers.js  sổ sticker, độ hiếm, tủ đồ Dango, album từ vựng (mô-đun)
+  journal.js   nhật ký, thư gửi tương lai, thử thách 7 ngày (mô-đun)
+  games.js     trò chơi nhỏ và Từ của ngày (mô-đun)
+  verbs.js     bảng và luyện động từ bất quy tắc (mô-đun)
+  (các mô-đun nạp trước app.js, đăng ký bằng AppModules.push((App) => {...}) và nhận App.routes, App.slots, App.hubs...)
   (sw.js, manifest.webmanifest, icons/ ở thư mục gốc: PWA dùng offline)
   data.js      đọc và lập chỉ mục dữ liệu từ vựng
   data/
@@ -71,6 +86,10 @@ js/
     vocab-exam.js                    từ IELTS và TOEIC
     vocab-extra.js                   từ bổ sung theo chủ đề mới và các tình huống giao tiếp
     topics-map.js                    phân loại lại chủ đề để hiển thị (=chuyển, +thêm nhãn)
+    extras.js                        thông tin mở rộng của từ (ví dụ thêm, cụm kết hợp, họ từ, ghi chú)
+    irregular.js                     động từ bất quy tắc
+    journal-topics.js                chủ đề, gợi ý, mẫu điền cho nhật ký và thử thách 7 ngày
+    texts-situations.js              6 hội thoại tình huống và câu hỏi nghe hiểu
     emoji.js                         emoji minh họa (từ|emoji)
     texts.js, texts-a0.js            bài shadowing / dịch bài
     quiz.js                          câu hỏi nghe hiểu cho từng bài
@@ -80,11 +99,22 @@ js/
 
 ## Kiểm thử
 
-Thuật toán SRS (`js/srs.js`) có bộ kiểm thử chạy bằng Node, không cần cài thêm gì:
+Kiểm thử đơn vị (SRS, dữ liệu từ vựng, trợ giúp viết) chạy bằng Node, không cần cài thêm gì:
 
 ```bash
 node --test
 ```
+
+Kiểm thử trình duyệt (gần 250 kiểm tra trên ứng dụng thật: học và ôn, sticker, nhật ký, trò chơi...) cần Chrome hoặc Edge:
+
+```bash
+cd tests/e2e && npm install     # chỉ cài puppeteer-core, không tải trình duyệt
+cd ../.. && node tests/e2e/run.js [tên-bộ-kiểm-thử]
+```
+
+Đặt `CHROME_PATH` nếu máy không ở đường dẫn quen thuộc, `E2E_REDUCED=1` để chạy với "giảm chuyển động" của hệ điều hành. Cả hai bộ cũng chạy trên GitHub Actions (`.github/workflows/test.yml`).
+
+**Khi sửa tệp nào của ứng dụng:** đổi số phiên bản ở `sw.js` (`CACHE`) và ở thẻ `app-version` trong `index.html` (có test kiểm tra hai số này khớp), và thêm tệp mới vào danh sách offline của `sw.js`.
 
 ## Thêm từ vựng
 
