@@ -12,6 +12,7 @@ const Store = (() => {
     onboarded: false,   // đã qua màn chào mừng đầu tiên chưa
     voice: '',
     rate: 0.9,
+    listenMix: false,   // luyện nghe: mỗi câu một giọng vùng khác nhau (Mỹ, Anh, Úc… nếu máy có)
     theme: 'auto',      // auto | light | dark
     skin: 'matcha',     // matcha | sakura | sky: giao diện màu
     fx: (navigator.hardwareConcurrency || 4) <= 2 ? 'light' : 'full', // full | light | off: mức hiệu ứng

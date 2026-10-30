@@ -10,6 +10,7 @@
  *   new    : chưa học bao giờ (không có bản ghi)
  *   learn  : đang ở bước học ngắn (tính bằng phút)
  *   review : đã "tốt nghiệp", khoảng cách tính bằng ngày
+ * Trường lk (tùy chọn): dạng bài vừa làm ở lượt gần nhất, dùng để chọn bài kế tiếp (xem pickKind).
  *
  * Khoảng cách mới tính theo số ngày THỰC TẾ đã trôi qua kể từ lần ôn trước:
  *   ôn sớm  → trả lời đúng không đổi lịch (chỉ luyện thêm)
@@ -66,6 +67,7 @@ const SRS = (() => {
     c.reps += 1;
     c.last = now;
     c.known = false; // cấp sẽ được tính lại theo kết quả thật
+    if (opts.kind) c.lk = opts.kind; // dạng bài vừa làm, để lượt sau không lặp lại bài nghe-gõ (xem pickKind)
 
     if (c.state === 'new' || c.state === 'learn') {
       c.state = 'learn';
@@ -196,9 +198,10 @@ const SRS = (() => {
   }
 
   /** "Đã nhớ rõ từ": nhảy thẳng lên cấp 5, khoảng cách tối thiểu 30 ngày. */
-  function master(card, now = Date.now()) {
+  function master(card, now = Date.now(), opts = {}) {
     const c = Object.assign(fresh(), card || {});
     c.state = 'review'; c.step = 0; c.known = true; c.last = now;
+    if (opts.kind) c.lk = opts.kind;
     c.reps = Math.max(3, c.reps || 0);
     c.ok = Math.max(CFG.matureOk, okOf(c));
     c.interval = Math.min(CFG.maxInterval, Math.max(30, Math.round((c.interval || 0) * 2)));
@@ -207,7 +210,39 @@ const SRS = (() => {
   }
   const markKnown = (now) => master(null, now);
 
-  const api = { CFG, LEVEL_NAMES, schedule, penalize, preview, label, level, status, fresh, introduce, master, markKnown, startOfDay, addDays };
+  /* ----- Chọn dạng bài cho thẻ -----
+   * Bài kiểm tra nghĩa: Nghe & chọn (lchoose), Chọn nghĩa (choice), Gõ từ từ nghĩa (type).
+   * Nghe & viết (ltype) chỉ cần nghe và chép chính tả: làm đúng mà không biết nghĩa vẫn được. Vì vậy nó không bao giờ đứng
+   * hai lượt liền nhau, nên giữa hai lần nghe-gõ luôn có ít nhất một bài kiểm tra nghĩa (kể cả khi từ lên "Thuộc lòng"). */
+  const MEANING_KINDS = ['lchoose', 'choice', 'type'];
+  const testsMeaning = (kind) => MEANING_KINDS.indexOf(kind) >= 0;
+  /** "Đã nhớ rõ từ" cần ít nhất một bài kiểm tra nghĩa; lật thẻ (intro) hay nghe-gõ thì chưa kiểm tra nghĩa. */
+  const needsMeaningCheck = (kind) => !testsMeaning(kind);
+
+  /** Dạng bài kế tiếp: 'intro' | 'lchoose' | 'ltype' | 'choice' | 'type'. listen=false (máy không đọc được tiếng) thì thay bài nghe bằng bài đọc. */
+  function pickKind(card, rand = Math.random, listen = true) {
+    if (!card) return 'intro';
+    const r = (a) => a[Math.floor(rand() * a.length)];
+    let k;
+    if (card.state === 'learn') k = (card.step || 0) === 0 ? 'lchoose' : 'ltype';
+    else {
+      let pool = level(card) <= 3 ? ['choice', 'type', 'ltype'] : ['type', 'ltype'];
+      if (card.lk === 'ltype') pool = pool.filter((x) => x !== 'ltype');
+      k = r(pool);
+    }
+    if (!listen) { if (k === 'lchoose') k = 'choice'; if (k === 'ltype') k = 'type'; }
+    return k;
+  }
+
+  /** Mức "sắp quên" của thẻ đang ôn: thời gian đã quá hạn tính theo số lần khoảng cách. Quá hạn 3 ngày với khoảng cách 1 ngày = 3;
+   *  quá hạn 10 ngày với khoảng cách 60 ngày ≈ 0,17. Ôn thẻ mức cao trước thì trần ôn mỗi ngày không cắt nhầm thẻ sắp quên.
+   *  Thẻ chưa quá hạn hoặc đang ở bước học (tính bằng phút, được xử lý riêng) = 0. */
+  function urgency(card, now = Date.now()) {
+    if (!card || card.state !== 'review') return 0;
+    return Math.max(0, now - card.due) / (Math.max(1, card.interval) * DAY);
+  }
+
+  const api = { CFG, LEVEL_NAMES, schedule, penalize, preview, label, level, status, fresh, introduce, master, markKnown, startOfDay, addDays, pickKind, testsMeaning, needsMeaningCheck, urgency };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   return api;
 })();

@@ -130,6 +130,21 @@ test('chủ đề nhật ký đủ gợi ý, câu mở đầu và mẫu điền'
   ch.forEach((c, i) => { assert.equal(c.day, i + 1); assert.ok(topics.some((t) => t.key === c.topic), c.topic); });
 });
 
+test('sameMeaning: từ đồng nghĩa cùng loại từ (movie / film), bỏ qua A0, không tự liệt kê chính mình', () => {
+  const syn = (id) => Array.from(Data.sameMeaning(Data.byId.get(id)), (w) => w.id);
+  assert.ok(syn('movie~n').includes('film~n'));
+  assert.ok(syn('film~n').includes('movie~n'));
+  assert.ok(syn('gift~n').includes('present~n'));
+  assert.deepEqual(syn('was~v'), [], 'ở A0 các từ chung nghĩa là dạng chia của nhau');
+  assert.deepEqual(Array.from(Data.sameMeaning(null)), []);
+  Data.words.forEach((w) => {
+    const s = Array.from(Data.sameMeaning(w));
+    assert.ok(!s.includes(w), 'tự liệt kê chính mình: ' + w.id);
+    s.forEach((x) => assert.equal(x.pos, w.pos, w.id + ' và ' + x.id + ' khác loại từ'));
+    assert.ok(s.length <= 6, w.id + ' có ' + s.length + ' từ cùng nghĩa');
+  });
+});
+
 test('mọi tệp dữ liệu và mã nguồn nằm trong index.html và trong danh sách offline của sw.js', () => {
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
   const cached = new Set(Array.from(sw.matchAll(/'([^']+\.(?:js|css|woff2|png|html))'/g), (m) => m[1]));

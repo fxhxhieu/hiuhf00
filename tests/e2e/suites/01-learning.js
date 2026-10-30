@@ -79,18 +79,26 @@
       ok('4 tóm tắt liệt kê từ cần chú ý', view().includes('Những từ cần chú ý'));
     } else ok('4 tìm lại được thẻ thử', false);
 
-    /* 5. "Đã nhớ rõ từ" phải qua kiểm tra nhanh */
+    /* 5. "Đã nhớ rõ từ" phải qua bài kiểm nghĩa (gõ từ từ nghĩa), hẹn sau vài thẻ chứ không gõ ngay cái vừa nhìn thấy */
     await go('#learn'); H.Store.settings.newPerDay = 5; click('#more'); await tick();
     S = H.session();
     const t1 = S.cur.w;
     click('[data-flip]'); await tick(); click('[data-act="known"]'); await tick();
-    ok('5 bấm "đã nhớ rõ" chuyển sang kiểm tra nhanh', S.cur.checkKnown === true && (S.cur.kind === 'ltype' || S.cur.kind === 'type') && !$('[data-act="known"]'), S.cur.kind);
-    ok('5 chưa lên cấp 5 trước khi kiểm tra', !H.Store.card(t1.id));
+    ok('5 bấm "đã nhớ rõ": sang thẻ khác, bài kiểm tra được hẹn sau', S.cur.w.id !== t1.id && S.checks[t1.id] === true && S.queue.indexOf(t1.id) >= 0 && S.queue.indexOf(t1.id) <= 6, S.queue.indexOf(t1.id));
+    ok('5 chưa lưu và chưa lên cấp 5 trước khi kiểm tra', !H.Store.card(t1.id));
+    let g5 = 0;
+    while (H.session() && !(H.session().cur.w.id === t1.id) && g5++ < 30) await answer(true);
+    S = H.session();
+    ok('5 đến lượt: bài kiểm tra là gõ từ từ nghĩa, không còn nút "đã nhớ rõ"', S.cur.w.id === t1.id && S.cur.checkKnown === true && S.cur.kind === 'type' && !$('[data-act="known"]'), S.cur.kind);
     await submit(t1.word); click('[data-act="continue"]'); await tick();
     const k1 = H.Store.card(t1.id);
-    ok('5 qua kiểm tra: lên cấp 5, khoảng cách >= 30 ngày', H.SRS.level(k1) === 5 && k1.interval >= 30, JSON.stringify(k1));
-    S = H.session(); const t2 = S.cur.w;
+    ok('5 qua kiểm tra: lên cấp 5, khoảng cách >= 30 ngày', H.SRS.level(k1) === 5 && k1.interval >= 30 && k1.lk === 'type', JSON.stringify(k1));
+    S = H.session(); let g6 = 0;
+    while (S && S.cur.kind !== 'intro' && g6++ < 30) { await answer(true); S = H.session(); }
+    const t2 = S.cur.w;
     click('[data-flip]'); await tick(); click('[data-act="known"]'); await tick();
+    g6 = 0;
+    while (H.session() && !(H.session().cur.w.id === t2.id && H.session().cur.checkKnown) && g6++ < 30) await answer(true);
     await submit('qqqqqq'); click('[data-act="continue"]'); await tick();
     const k2 = H.Store.card(t2.id);
     ok('5 trượt kiểm tra: vào học từ đầu (cấp 1)', k2 && k2.state === 'learn' && H.SRS.level(k2) === 1, JSON.stringify(k2));

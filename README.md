@@ -19,8 +19,8 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 - **6 hội thoại tình huống** (nhà hàng, khách sạn, sân bay, đi khám, hỏi đường, gọi điện) dùng được cho Shadowing, Dịch bài và Nghe hiểu hội thoại.
 - **Chủ đề mới và 198 từ mới**: Động vật, Thời tiết, Số đếm, Lịch, Thể thao, Nghề nghiệp, Phương tiện, Thói quen hằng ngày, và 6 chủ đề **tình huống giao tiếp** (nhà hàng, khách sạn, sân bay, đi khám, hỏi đường, gọi điện) gồm 73 câu ngắn dùng được ngay.
 - **Học kiểu Mochi, hệ thống tự xếp cấp**: không cần chọn bộ thẻ. Từ mới đi qua ba bước: lật thẻ, Nghe & chọn, Nghe & viết. Mỗi từ tự được xếp vào cấp 0 đến 5 (Mới, Mới gặp, Nhận ra, Nhớ được, Vững, Thuộc lòng). Cấp 2 là "đã qua bài trong phiên, chờ ôn lại sau ít nhất 1 ngày"; chỉ khi nhớ đúng lúc ôn lại mới lên cấp 3 trở lên. Từ cấp 4 trở lên phải gõ ra khi ôn, cấp 5 cần khoảng cách từ 21 ngày và ôn đúng 2 lần liên tiếp.
-- **Học và ôn**: các nút Ôn tập ngay, Học từ mới, Học thêm 10 từ mới nằm ở trang Hôm nay. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (phím tắt 1 và 2). Với từ chưa học, "Đã nhớ rõ từ" phải qua một câu nghe và gõ lại thì mới lên thẳng cấp 5. Cuối phiên có danh sách từ cần chú ý.
-- **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Khoảng cách tính theo số ngày thực tế: ôn sớm mà đúng thì không đổi lịch, ôn trễ được cộng nửa số ngày trễ. Đúng nhờ trắc nghiệm thì khoảng cách tăng chậm hơn gõ đúng. Quên thì khoảng cách còn 25% (tối đa 14 ngày). Gõ sai đúng một ký tự (từ từ 5 chữ cái) được gõ lại một lần, và chấp nhận chính tả Anh–Mỹ lẫn Anh–Anh. Sai ở bài Nghe, Nói hoặc Kiểm tra cuối bài cũng kéo lịch ôn của từ đã thuộc lại gần hơn (tối đa một lần mỗi ngày).
+- **Học và ôn**: các nút Ôn tập ngay, Học từ mới, Học thêm 10 từ mới nằm ở trang Hôm nay. Sau mỗi thẻ có hai nút: **Tiếp tục** và **Đã nhớ rõ từ** (phím tắt 1 và 2). "Đã nhớ rõ từ" phải qua một bài gõ từ từ nghĩa thì mới lên thẳng cấp 5 (với từ chưa học, hoặc vừa làm bài Nghe & viết, bài kiểm tra được hẹn sau vài thẻ nữa để không phải gõ lại đúng cái vừa nhìn thấy). Thẻ đến hạn được ôn theo mức sắp quên (số lần khoảng cách đã bị vượt quá), nên trần ôn mỗi ngày không cắt nhầm thẻ sắp quên. Khi tồn nhiều thẻ, trang Hôm nay có nút **Ôn nhanh 15 thẻ** (khoảng 3 phút) và báo cần ít nhất mấy ngày để hết tồn. Cuối phiên có danh sách từ cần chú ý.
+- **Lặp lại ngắt quãng (SRS)**: biến thể SM-2. Bước học 1 phút và 10 phút, sau đó tính bằng ngày. Khoảng cách tính theo số ngày thực tế: ôn sớm mà đúng thì không đổi lịch, ôn trễ được cộng nửa số ngày trễ. Đúng nhờ trắc nghiệm thì khoảng cách tăng chậm hơn gõ đúng. Bài Nghe & viết chỉ cần nghe và chép chính tả, không kiểm tra nghĩa, nên không bao giờ đứng hai lượt ôn liền nhau. Quên thì khoảng cách còn 25% (tối đa 14 ngày). Gõ sai đúng một ký tự (từ từ 5 chữ cái) được gõ lại một lần, và chấp nhận chính tả Anh–Mỹ lẫn Anh–Anh. Gõ một từ đồng nghĩa (film thay cho movie) cũng được gõ lại một lần, không bị tính là quên và không lộ đáp án. Sai ở bài Nghe, Nói hoặc Kiểm tra cuối bài cũng kéo lịch ôn của từ đã thuộc lại gần hơn (tối đa một lần mỗi ngày).
 - **Mục tiêu và xếp trình độ**: lần đầu mở app có màn chào mừng để chọn mục tiêu (giao tiếp, IELTS, TOEIC) và số từ mới mỗi ngày, rồi làm bài xếp trình độ tối đa 20 câu để bỏ qua các cấp đã biết. "Học từ mới" đi theo đúng thứ tự bài trong Lộ trình; mục tiêu IELTS hoặc TOEIC ưu tiên từ của kỳ thi sau phần nền tảng A0 và A1.
 - **Lịch ôn sắp tới**: trang Tiến độ dự báo số thẻ đến hạn hôm nay, ngày mai, 2 đến 7 ngày tới, và tỉ lệ nhớ đúng khi ôn trong 14 ngày qua (hiện sau 10 lượt ôn). Thanh cấp thuộc tính trên số từ đã học.
 - **Từ của tôi**: thêm từ gặp ngoài đời ở Thư viện, hoặc bấm vào từ lạ trong Dịch bài. Từ được học sớm nhất và nằm trong sao lưu.
@@ -29,10 +29,11 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 - **Thư viện từ**: tìm theo tiếng Anh hoặc tiếng Việt, lọc theo cấp độ CEFR, chủ đề, cấp thuộc; ưu tiên học một từ hoặc đánh dấu "đã nhớ rõ".
 - **Phiên âm IPA (Anh–Mỹ)** cho cả 2.369 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
 - **Lộ trình** gồm 249 bài nhỏ (khoảng 10 từ mỗi bài). Mỗi bài có 4 bước: học từ, luyện nghe, luyện nói, kiểm tra cuối (đạt từ 70% thì mở bài tiếp theo). Bài đã biết thì bấm "Mình đã biết hết, kiểm tra ngay" (đạt từ 70% là qua), hoặc làm bài xếp trình độ, hoặc mở khóa toàn bộ trong Cài đặt.
-- **Luyện nói**: đọc to từng từ, trình duyệt (Chrome, Edge) tự chấm; mỗi từ kèm gợi ý đặt lưỡi, môi cho các âm khó (th, r, l, sh, ch, ng, âm cuối, nguyên âm ngắn dài). Nhóm luyện theo âm hoặc theo từ khó của bạn.
+- **Luyện nói**: đọc to từng từ, trình duyệt (Chrome, Edge) tự chấm; mỗi từ kèm gợi ý đặt lưỡi, môi cho các âm khó (th, r, l, sh, ch, ng, âm cuối, nguyên âm ngắn dài). Nhóm luyện theo âm hoặc theo từ khó của bạn. Có thêm **Đọc to câu ví dụ** (chấm từng từ, đạt từ 75% số từ) và **Nói tự do** (trả lời một câu hỏi bằng tiếng Anh, xem bản chép lời, số từ đã học bạn dùng và các lỗi ngữ pháp cơ bản). Chrome gửi âm thanh tới máy chủ nhận dạng giọng nói của Google (Edge: Microsoft); hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.
 - **Từ khó** tự cập nhật: từ làm sai ở bài nghe hoặc bài nói được thêm vào, làm đúng lại thì được bỏ ra.
-- **Nghe** (8 chế độ, thêm Nghe và chọn hình, mỗi lượt 10 câu, chọn cấp A0 đến B1 và tốc độ): nghe và chọn nghĩa, nghe và viết từ, nghe số và giá tiền (phân biệt 13/30, số điện thoại), nghe giờ (chọn đồng hồ), nghe và sắp xếp câu, nghe và chép câu (chấm từng từ), nghe hiểu hội thoại (2 giọng, có câu hỏi cho 18 bài). Có nghe chậm, phím tắt, thống kê từng chế độ.
+- **Nghe** (8 chế độ, thêm Nghe và chọn hình, mỗi lượt 10 câu, chọn cấp A0 đến B1 và tốc độ): nghe và chọn nghĩa, nghe và viết từ, nghe số và giá tiền (phân biệt 13/30, số điện thoại), nghe giờ (chọn đồng hồ), nghe và sắp xếp câu, nghe và chép câu (chấm từng từ), nghe hiểu hội thoại (2 giọng, có câu hỏi cho 18 bài). Có nghe chậm, phím tắt, thống kê từng chế độ. Cài đặt có mục **Giọng khi luyện nghe**: mỗi câu một giọng vùng (Mỹ, Anh, Úc…) nếu máy có, bấm nghe lại vẫn giữ giọng đó.
 - **Phát âm**: 13 nhóm cặp âm dễ nhầm (ship/sheep, light/right, think/sink…) kèm IPA, nghe từng từ và bài **Luyện tai** (nghe rồi chọn từ đúng).
+- **Trọng âm, đuôi từ, ghép cụm** (Luyện → Trọng âm, đuôi từ, cụm từ): ba dạng bài 10 câu sinh từ dữ liệu có sẵn. **Trọng âm**: nghe một từ, chọn âm tiết được nhấn (suy ra từ dấu ˈ trong IPA, khoảng 1.400 từ). **Đuôi -s và -ed**: đuôi đọc là /s/ /z/ /ɪz/ hay /t/ /d/ /ɪd/ (suy ra từ âm cuối của IPA từ gốc, có giải thích). **Ghép cụm**: chọn từ đúng cho cụm kết hợp (make a decision, do homework, say hello, tell a story…); các bộ từ dễ nhầm do người soạn chọn tay để mỗi câu chỉ có một đáp án.
 - **Từ khó**: tự gom những từ bạn từng quên, luyện riêng 20 từ mỗi lượt; có bộ lọc “Từ khó” và lọc theo loại từ trong thư viện.
 - **Mục tiêu hôm nay** hiện ngay ở trang chính.
 - **Dùng offline / cài như ứng dụng (PWA)** khi mở qua https (GitHub Pages).
@@ -62,7 +63,7 @@ Chạy thử trên máy: mở thư mục bằng một server tĩnh bất kỳ, v
 index.html
 css/style.css
 fonts/        font Nunito (OFL) tải sẵn để chạy offline
-tests/        kiểm thử: node --test (srs, data, writing) và tests/e2e (trình duyệt thật)
+tests/        kiểm thử: node --test (srs, data, writing, drills, tts) và tests/e2e (trình duyệt thật)
 js/
   app.js       giao diện và các màn hình
   srs.js       thuật toán lặp lại ngắt quãng và cách xếp cấp thuộc
@@ -76,6 +77,7 @@ js/
   journal.js   nhật ký, thư gửi tương lai, thử thách 7 ngày (mô-đun)
   games.js     trò chơi nhỏ và Từ của ngày (mô-đun)
   verbs.js     bảng và luyện động từ bất quy tắc (mô-đun)
+  drills.js    trọng âm, đuôi -s/-ed, ghép cụm: sinh câu hỏi từ IPA và extras (hàm thuần, có test) cùng giao diện (mô-đun)
   (các mô-đun nạp trước app.js, đăng ký bằng AppModules.push((App) => {...}) và nhận App.routes, App.slots, App.hubs...)
   (sw.js, manifest.webmanifest, icons/ ở thư mục gốc: PWA dùng offline)
   data.js      đọc và lập chỉ mục dữ liệu từ vựng
@@ -99,13 +101,13 @@ js/
 
 ## Kiểm thử
 
-Kiểm thử đơn vị (SRS, dữ liệu từ vựng, trợ giúp viết) chạy bằng Node, không cần cài thêm gì:
+Kiểm thử đơn vị (SRS, dữ liệu từ vựng, trợ giúp viết, các bài sinh từ dữ liệu, chọn giọng đọc) chạy bằng Node, không cần cài thêm gì:
 
 ```bash
 node --test
 ```
 
-Kiểm thử trình duyệt (gần 250 kiểm tra trên ứng dụng thật: học và ôn, sticker, nhật ký, trò chơi...) cần Chrome hoặc Edge:
+Kiểm thử trình duyệt (gần 300 kiểm tra trên ứng dụng thật: học và ôn, sticker, nhật ký, trò chơi, các bài luyện...) cần Chrome hoặc Edge:
 
 ```bash
 cd tests/e2e && npm install     # chỉ cài puppeteer-core, không tải trình duyệt
@@ -139,5 +141,6 @@ Thêm một đối tượng vào mảng trong `js/data/texts.js`:
 
 - Tiến độ lưu trong `localStorage` của từng trình duyệt. Đổi máy hoặc xóa dữ liệu duyệt web sẽ mất, nên hãy dùng **Cài đặt → Xuất file sao lưu** định kỳ.
 - Giọng đọc phụ thuộc vào giọng tiếng Anh có sẵn trong hệ điều hành/trình duyệt. Có thể chọn giọng khác trong Cài đặt.
+- Luyện nói, Đọc to câu và Nói tự do dùng nhận dạng giọng nói của trình duyệt: Chrome gửi âm thanh tới máy chủ của Google (Edge: Microsoft) để chép lời. hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.
 - Thuật toán SRS là biến thể của SM-2 do mình tự cài đặt, không phải bản sao thuật toán nội bộ của Mochi.
 - Cấp độ A1 đến B1 được xếp tương đối theo khung CEFR, không phải danh sách chính thức.

@@ -85,7 +85,7 @@
     if (!b) return;
     e.stopPropagation();
     if (!TTS.ok) { toast('Trình duyệt này không hỗ trợ đọc to. Hãy thử Chrome, Edge hoặc Safari.'); return; }
-    TTS.speak(b.dataset.say, { rate: b.dataset.rate ? parseFloat(b.dataset.rate) : undefined });
+    TTS.speak(b.dataset.say, { rate: b.dataset.rate ? parseFloat(b.dataset.rate) : undefined, mix: b.hasAttribute('data-mix') });
   }, true);
 
   function applyTheme() {
@@ -120,6 +120,7 @@
     L = null;
     PL = null;
     stopSpeak();
+    stopFree();
     stopShadow();
     closeSheet();
     TTS.cancel();
@@ -190,14 +191,21 @@
     };
   }
 
+  /* Lượt ôn ngắn cho người đang tồn nhiều thẻ: BITE thẻ sắp quên nhất, ước chừng SEC_PER_CARD giây mỗi thẻ */
+  const BITE = 15;
+  const SEC_PER_CARD = 12;
+
   /* Ba việc nhỏ mỗi ngày: ôn thẻ, học từ mới, một lượt nghe */
   function todayTasks(s) {
+    const cap = Math.max(1, s.set.reviewsPerDay);
+    const backlog = s.due > cap ? `. Tồn nhiều hơn mức ${cap} thẻ mỗi ngày, cần ít nhất ${Math.ceil(s.due / cap)} ngày để hết` : '';
     return [
       {
         id: 'review', icon: '🔁', act: 'review',
         title: s.due ? `Ôn ${s.due} thẻ đến hạn` : 'Ôn thẻ đến hạn',
-        sub: !s.hasLearned ? 'Học vài từ mới trước đã nhé' : s.due ? 'Ôn đúng lúc để không quên' : 'Không còn thẻ nào đến hạn',
-        done: s.hasLearned && s.due === 0, off: !s.hasLearned, btn: 'Ôn ngay'
+        sub: !s.hasLearned ? 'Học vài từ mới trước đã nhé' : s.due ? 'Ôn đúng lúc để không quên' + backlog : 'Không còn thẻ nào đến hạn',
+        done: s.hasLearned && s.due === 0, off: !s.hasLearned, btn: 'Ôn ngay',
+        alt: s.hasLearned && s.due > BITE + 5 ? { act: 'review-bite', btn: `Ôn nhanh ${BITE} thẻ sắp quên nhất · khoảng ${Math.max(1, Math.round(BITE * SEC_PER_CARD / 60))} phút` } : null
       },
       {
         id: 'new', icon: '🌱', act: s.newLeft ? 'learnnew' : 'more',
@@ -217,7 +225,7 @@
 
   const taskHTML = (t) => `<li class="task ${t.done ? 'done' : ''} ${t.off ? 'off' : ''}">
       <span class="task-i" aria-hidden="true">${t.done ? '✅' : t.icon}</span>
-      <span class="task-b"><b>${esc(t.title)}</b><small class="muted">${esc(t.sub)}</small></span>
+      <span class="task-b"><b>${esc(t.title)}</b><small class="muted">${esc(t.sub)}</small>${t.alt ? `<button class="btn sm task-alt" id="${t.alt.act}">${esc(t.alt.btn)}</button>` : ''}</span>
       <button class="btn sm ${t.done ? '' : 'primary'}" id="${t.act}" ${t.off ? 'disabled' : ''}>${esc(t.btn)}</button>
     </li>`;
 
@@ -297,6 +305,7 @@
       if (t.id === 'backup-now') { exportBackup(); toast('Đã tải file sao lưu.'); return renderLearn(); }
       if (t.id === 'backup-later') { Store.settings.backupSnooze = Date.now() + SNOOZE_DAYS * 86400000; Store.save(); return renderLearn(); }
       if (t.id === 'review') return startSession('review', 0);
+      if (t.id === 'review-bite') return startSession('review', 0, { limit: BITE });
       if (t.id === 'learnnew') return startSession('new', 0);
       if (t.id === 'more') return startSession('new', 10);
       if (t.id === 'hard') return startSession('hard', 0);
@@ -432,7 +441,7 @@
   }
 
   /* ================= HỌC: phiên học ================= */
-  function buildQueue(kind, extraNew) {
+  function buildQueue(kind, extraNew, opts) {
     const set = Store.settings;
     const daily = Store.daily();
     const now = Date.now();
@@ -448,7 +457,8 @@
         if (c.state === 'learn' && c.due - now < 20 * 60000) learning.push(w);
       }
     });
-    dueReview.sort((a, b) => cards[a.id].due - cards[b.id].due);
+    // Thẻ sắp quên nhất ôn trước: xếp theo số lần khoảng cách đã bị vượt quá, không theo số ngày quá hạn tuyệt đối
+    dueReview.sort((a, b) => SRS.urgency(cards[b.id], now) - SRS.urgency(cards[a.id], now) || cards[a.id].due - cards[b.id].due);
 
     if (kind === 'hard') {
       const hard = Data.words.filter(isHard).sort((a, b) => hardScore(b) - hardScore(a));
@@ -456,7 +466,8 @@
     }
 
     if (kind === 'review') {
-      const reviews = dueReview.slice(0, Math.max(0, set.reviewsPerDay - daily.reviewDone));
+      const cap = Math.max(0, set.reviewsPerDay - daily.reviewDone);
+      const reviews = dueReview.slice(0, opts && opts.limit ? Math.min(cap, opts.limit) : cap); // limit: lượt ôn ngắn
       let list = [...learning, ...reviews];
       let early = false;
       if (!list.length && upcoming.length) {
@@ -489,25 +500,18 @@
     return fresh.map((w, i) => [rank(w), i, w]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
   }
 
-  function startSession(kind, extraNew) {
-    const r = buildQueue(kind, extraNew || 0);
+  function startSession(kind, extraNew, opts) {
+    const r = buildQueue(kind, extraNew || 0, opts);
     if (!r.ids.length) { toast('Chưa có thẻ nào để học lúc này.'); return; }
-    S = { queue: r.ids, total: r.ids.length, answered: 0, correct: 0, cur: null, kind };
+    S = { queue: r.ids, total: r.ids.length, answered: 0, correct: 0, cur: null, kind, limit: (opts && opts.limit) || 0 };
     if (r.early) toast('Chưa có thẻ đến hạn, mình cho bạn ôn trước 20 thẻ gần đến hạn nhất. Trả lời đúng sẽ không làm lịch ôn xa hơn, quên thì vẫn tính.');
     nextCard();
   }
 
   /* Thang bài tập: lật thẻ → nghe & chọn → nghe & viết (trong phiên), sau đó các bài ôn xen kẽ.
-   * Từ cấp 4 trở lên bắt buộc phải gõ ra, không còn trắc nghiệm. */
-  function pickKind(c) {
-    if (!c) return 'intro';
-    const r = (a) => a[Math.floor(Math.random() * a.length)];
-    let k;
-    if (c.state === 'learn') k = (c.step || 0) === 0 ? 'lchoose' : 'ltype';
-    else k = SRS.level(c) <= 3 ? r(['choice', 'type', 'ltype']) : r(['type', 'ltype']);
-    if (!TTS.ok) { if (k === 'lchoose') k = 'choice'; if (k === 'ltype') k = 'type'; }
-    return k;
-  }
+   * Từ cấp 4 trở lên bắt buộc phải gõ ra, không còn trắc nghiệm. Nghe & viết chỉ chép chính tả, không kiểm tra nghĩa,
+   * nên không đứng hai lượt liền (xem SRS.pickKind). */
+  const pickKind = (c) => SRS.pickKind(c, Math.random, TTS.ok);
 
   /* Hiệu ứng sau mỗi câu trả lời: nảy hoặc rung, Dango đổi mặt, đếm combo đúng liên tiếp */
   function answerFx(ok, el) {
@@ -558,7 +562,9 @@
     const w = Data.byId.get(id);
     if (!w) return nextCard();
     const c = Store.card(id);
-    S.cur = { w, c, kind: pickKind(c), flipped: false, answered: false, correct: null, options: null, dir: null, typed: '', picked: null };
+    const chk = !!(S.checks && S.checks[id]); // đến lượt bài kiểm tra "Đã nhớ rõ" đã hẹn
+    if (chk) delete S.checks[id];
+    S.cur = { w, c, kind: chk ? 'type' : pickKind(c), checkKnown: chk, flipped: false, answered: false, correct: null, options: null, dir: null, typed: '', picked: null };
     renderCard();
   }
 
@@ -579,13 +585,13 @@
     const lvNow = SRS.level(c);
     let next, sub;
     if (cur.checkKnown) {
-      next = correct ? SRS.master(c, now) : SRS.introduce(now);
-      sub = correct ? 'xác nhận đã nhớ rõ, ôn lại sau ' + SRS.label(next, now) : 'chưa nhớ rõ, học từ này từ đầu';
+      next = correct ? SRS.master(c, now) : (c ? SRS.schedule(c, 0, now) : SRS.introduce(now));
+      sub = correct ? 'xác nhận đã nhớ rõ, ôn lại sau ' + SRS.label(next, now) : (c ? 'chưa nhớ rõ, học lại sau ' + SRS.label(next, now) : 'chưa nhớ rõ, học từ này từ đầu');
     } else if (cur.kind === 'intro') { next = SRS.introduce(now); sub = 'làm bài Nghe & chọn'; }
     else { next = SRS.schedule(c, correct ? 2 : 0, now, { recog: isRecog(cur) }); sub = (correct ? 'ôn lại sau ' : 'học lại sau ') + SRS.label(next, now); }
     const lvNext = SRS.level(next);
     const known = SRS.master(c, now);
-    const knownSub = cur.kind === 'intro' ? 'gõ lại từ để xác nhận' : 'ôn lại sau ' + SRS.label(known, now);
+    const knownSub = SRS.needsMeaningCheck(cur.kind) ? 'kiểm tra nghĩa sau vài thẻ nữa' : 'ôn lại sau ' + SRS.label(known, now);
     return `<div class="lvchg">${mvBadge(lvNow)}<span aria-hidden="true">›</span>${mvBadge(lvNext)}</div>
       <div class="act2">
         <button class="btn primary lg" data-act="continue"><span>Tiếp tục</span><small>${esc(sub)}</small><kbd>1</kbd></button>
@@ -684,7 +690,7 @@
       ? `<div class="prompt"><button class="btn lg" data-say="${esc(w.word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(w.word)}" data-rate="0.55">🐢 Nghe chậm</button></div><p class="muted center">${cur.checkKnown ? 'Kiểm tra nhanh: nghe và gõ lại từ để xác nhận bạn đã nhớ rõ' : 'Nghe và viết lại từ bạn nghe được'}</p>`
       : `<div class="prompt"><div class="fc-vi">${esc(w.vi)}</div><div class="fc-pos">${esc(w.pos)}</div></div>
          <p class="cloze">${cloze(w.ex, w.word)}</p><p class="muted center">${cur.checkKnown ? 'Kiểm tra nhanh: gõ từ tiếng Anh để xác nhận bạn đã nhớ rõ. ' : ''}Gõ từ tiếng Anh, ${hint}</p>`;
-    if (cur.near) body += '<p class="notice center">Gần đúng rồi! Kiểm tra lại chính tả và gõ lại nhé.</p>';
+    if (cur.near) body += cur.synonym ? `<p class="notice center">Đúng nghĩa! “${esc(cur.typed)}” cũng có nghĩa này, nhưng đây không phải từ đang học. Thử một từ khác cùng nghĩa nhé.</p>` : '<p class="notice center">Gần đúng rồi! Kiểm tra lại chính tả và gõ lại nhé.</p>';
     if (!cur.answered) {
       body += `<form class="typebox" id="tf" autocomplete="off"><input id="ti" class="input lg" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Gõ từ tiếng Anh…" aria-label="Câu trả lời"><button class="btn primary" type="submit">Kiểm tra</button></form><button class="btn ghost sm center-btn" data-giveup="1">Mình không nhớ</button>`;
     } else {
@@ -711,6 +717,14 @@
       stageType(cur.kind === 'ltype');
       const ti = $('#ti');
       if (ti) { ti.value = val.trim(); ti.select(); }
+      return;
+    }
+    if (verdict === 'bad' && !cur.near && cur.kind === 'type' && Data.sameMeaning(cur.w).some((x) => judgeWord(val, x.word) === 'ok')) {
+      // Gõ một từ khác cùng nghĩa (movie / film): chưa phải từ đang học nhưng không phải quên nghĩa. Cho gõ lại một lần,
+      // không phạt, không lộ đáp án (ô nhập được làm trống để phải nhớ ra từ đúng)
+      cur.near = true;
+      cur.synonym = true;
+      stageType(false);
       return;
     }
     cur.correct = verdict === 'ok';
@@ -748,33 +762,40 @@
     if (btn && btn.dataset.giveup) { cur.correct = false; cur.typed = ''; cur.answered = true; stageType(cur.kind === 'ltype'); answerFx(false); return; }
   }
 
+  /* "Đã nhớ rõ từ" phải có ít nhất một bài kiểm tra nghĩa. Lật thẻ hay nghe-gõ thì chưa kiểm nghĩa, nên hẹn một bài gõ từ nghĩa
+   * sau vài thẻ nữa: gõ ngay sau khi vừa nhìn thấy từ thì chẳng kiểm tra được gì. */
+  const CHECK_GAP = 6;
+  function queueKnownCheck(id) {
+    (S.checks || (S.checks = {}))[id] = true;
+    S.queue.splice(Math.min(S.queue.length, CHECK_GAP), 0, id);
+  }
+
   function applyAction(act) {
     const cur = S.cur;
     const { w, c } = cur;
     if (act === 'known' && !(cur.kind === 'intro' ? cur.flipped : cur.correct)) return;
     if (act === 'continue' && cur.kind === 'intro' && !cur.flipped) return;
-    if (act === 'known' && cur.kind === 'intro') {
-      // Từ chưa học mà bấm "đã nhớ rõ": phải qua một câu nghe và gõ lại thì mới lên cấp 5
-      Object.assign(cur, { kind: TTS.ok ? 'ltype' : 'type', checkKnown: true, flipped: false, answered: false, correct: null, typed: '', near: false, weak: false });
-      return renderCard();
-    }
+    const wantCheck = act === 'known' && !cur.checkKnown && SRS.needsMeaningCheck(cur.kind);
+    // Từ chưa học mà bấm "đã nhớ rõ": chưa lưu gì cho tới khi qua bài kiểm tra đã hẹn
+    if (wantCheck && cur.kind === 'intro') { queueKnownCheck(w.id); return nextCard(); }
     const now = Date.now();
     const wasHard = isHard(w);
     let nc;
     let ok = true;
     if (cur.checkKnown) {
       ok = !!cur.correct;
-      nc = ok ? SRS.master(c, now) : SRS.introduce(now);
-      Store.logReview(true, ok);
-    } else if (act === 'known') {
-      nc = SRS.master(c, now);
+      // Trượt bài kiểm tra: thẻ mới học từ đầu; thẻ đã có lịch sử thì tính là một lần quên bình thường
+      nc = ok ? SRS.master(c, now, { kind: cur.kind }) : (c ? SRS.schedule(c, 0, now, { kind: cur.kind }) : SRS.introduce(now));
+      Store.logReview(!c, ok);
+    } else if (act === 'known' && !wantCheck) {
+      nc = SRS.master(c, now, { kind: cur.kind });
       Store.logReview(!c, true);
     } else if (cur.kind === 'intro') {
       nc = SRS.introduce(now);
       Store.logReview(true, true);
     } else {
       ok = !!cur.correct;
-      nc = SRS.schedule(c, ok ? 2 : 0, now, { recog: isRecog(cur) });
+      nc = SRS.schedule(c, ok ? 2 : 0, now, { recog: isRecog(cur), kind: cur.kind });
       Store.logReview(false, ok);
     }
     Store.setCard(w.id, nc);
@@ -797,6 +818,7 @@
       const pos = cur.kind === 'intro' || nc.step === 0 ? Math.min(S.queue.length, 3) : S.queue.length;
       S.queue.splice(pos, 0, w.id);
     }
+    if (wantCheck) queueKnownCheck(w.id); // vừa nghe-gõ đúng rồi bấm "đã nhớ rõ": kết quả nghe-gõ đã tính, còn bài kiểm nghĩa thì hẹn sau
     nextCard();
   }
 
@@ -806,10 +828,12 @@
     const back = S.back || '';
     const up = S.up || 0;
     const missed = Array.from(new Map((S.missed || []).map((w) => [w.id, w])).values());
+    const biteLimit = S.kind === 'review' ? S.limit : 0; // vừa xong một lượt ôn ngắn
     S = null;
     checkBadges();
     const cards = Store.get().cards;
     const fresh = Data.words.filter((w) => !cards[w.id]).length;
+    const dueLeft = biteLimit ? Data.words.filter((w) => cards[w.id] && cards[w.id].due <= Date.now()).length : 0;
     const counts = masteryCounts();
     const missHTML = missed.map((w) => `<li><b>${esc(w.word)}</b> ${ipaHTML(w)} · ${esc(w.vi)} <button class="icon-btn sm" data-say="${esc(w.word)}" aria-label="Nghe">🔊</button></li>`).join('');
     const stars = !answered ? 0 : answered >= 5 && acc >= 90 ? 3 : acc >= 70 ? 2 : 1;
@@ -829,6 +853,7 @@
         ${missHTML ? `<h2>Những từ cần chú ý</h2><ul class="misslist">${missHTML}</ul>` : ''}
         <div class="row wrap">
           <button class="btn primary" id="back-home">${back ? 'Quay lại bài' : 'Về trang học'}</button>
+          ${dueLeft ? `<button class="btn" id="more-review">Ôn tiếp ${Math.min(biteLimit, dueLeft)} thẻ (còn ${dueLeft} thẻ đến hạn)</button>` : ''}
           ${back ? '' : `<button class="btn" id="more-new" ${fresh ? '' : 'disabled'}>Học thêm 10 từ mới</button>`}
         </div>
       </section>`;
@@ -837,6 +862,7 @@
       if (!b || b.disabled) return;
       if (b.id === 'back-home') goBack(back);
       if (b.id === 'more-new') startSession('new', 10);
+      if (b.id === 'more-review') startSession('review', 0, { limit: biteLimit });
     };
     if (stars >= 2) { FX.confetti(); FX.sound('complete'); FX.haptic([15, 30, 15]); }
     const extra = [];
@@ -1304,11 +1330,27 @@
     return out;
   }
 
+  /* Câu ví dụ để đọc to: 4 đến 10 từ, mỗi câu một lần, ưu tiên từ đã học rồi bổ sung từ A0, A1. Chấm theo tỉ lệ từ khớp. */
+  function sentencePool() {
+    const seen = new Set(), out = [];
+    const add = (w) => {
+      const t = String(w.ex || '').trim(), n = t.split(/\s+/).length;
+      if (!t || n < 4 || n > 10 || seen.has(t.toLowerCase())) return;
+      seen.add(t.toLowerCase());
+      out.push({ word: t, sent: true, vi: w.word + ' · ' + w.vi, pass: 75 });
+    };
+    shuffle(Data.words.filter((w) => !w.custom && Store.card(w.id))).forEach(add);
+    if (out.length < 10) shuffle(Data.words.filter((w) => !w.custom && !Store.card(w.id) && (w.level === 'A0' || w.level === 'A1'))).forEach(add);
+    return out;
+  }
+
   function speakFeatures() {
     const single = (w) => w.word.indexOf(' ') < 0 && w.pos !== 'phr' && w.ipa;
     const base = Data.words.filter((w) => single(w) && (w.level === 'A0' || w.level === 'A1' || w.level === 'A2'));
     const test = (re) => base.filter((w) => re.test(w.ipa));
     return [
+      { key: 'sent', icon: '💬', name: 'Đọc to câu ví dụ', desc: 'Đọc cả câu, máy chấm từng từ.', unit: 'câu', pool: sentencePool },
+      { key: 'free', icon: '🗣️', name: 'Nói tự do', desc: 'Trả lời một câu hỏi, xem lại lời mình nói và lỗi cơ bản.', free: true, pool: () => (Recog.C ? [1] : []) },
       { key: 'th', icon: '👅', name: 'Âm th: /θ/ và /ð/', desc: 'think, this, mother, three…', pool: () => test(/[θð]/) },
       { key: 'r', icon: '🌀', name: 'Âm r và l', desc: 'red, right, light, world…', pool: () => test(/^[ˈˌ]?[rl]/) },
       { key: 'sh', icon: '🤫', name: 'Âm sh, ch, j', desc: 'ship, cheap, job, watch…', pool: () => test(/[ʃʒ]|tʃ|dʒ/) },
@@ -1320,23 +1362,25 @@
     ];
   }
 
-  function renderSpeak() {
+  function renderSpeak(arg) {
     stopSpeak();
+    if (arg === 'free') return startFree();
     const feats = speakFeatures();
     const cards = feats.map((f) => {
       const n = f.pool().length;
-      return `<button class="lmode" data-feat="${f.key}" ${n ? '' : 'disabled'}><span class="lmode-i" aria-hidden="true">${f.icon}</span><span class="lmode-b"><b>${esc(f.name)}</b><span class="muted">${esc(f.desc)}</span><small class="muted">${n} từ</small></span></button>`;
+      return `<button class="lmode" data-feat="${f.key}" ${n ? '' : 'disabled'}><span class="lmode-i" aria-hidden="true">${f.icon}</span><span class="lmode-b"><b>${esc(f.name)}</b><span class="muted">${esc(f.desc)}</span><small class="muted">${f.free ? 'Chrome, Edge' : n + ' ' + (f.unit || 'từ')}</small></span></button>`;
     }).join('');
     view.innerHTML = `
       <a class="back" href="#listen">‹ Trang Nghe</a>
       <section class="page-h"><h1>Luyện nói</h1><p class="muted">Đọc to từng từ, máy sẽ nghe và cho biết bạn đọc đúng chưa, kèm gợi ý cách đặt lưỡi, môi cho các âm người Việt hay nhầm.</p></section>
       ${Recog.C ? '' : '<p class="notice">Trình duyệt này không tự chấm được giọng nói. Bạn vẫn ghi âm, nghe lại và tự đánh giá được. Dùng Chrome hoặc Edge để được chấm tự động.</p>'}
       <div class="lmodes">${cards}</div>
-      <section class="card"><h2>Lưu ý</h2><p class="muted">Chấm điểm dựa vào nhận dạng giọng nói của trình duyệt nên chỉ mang tính tham khảo. Cần mở trang bằng https hoặc localhost và cho phép micro.</p></section>`;
+      <section class="card"><h2>Lưu ý</h2><p class="muted">Chấm điểm dựa vào nhận dạng giọng nói của trình duyệt nên chỉ mang tính tham khảo. Cần mở trang bằng https hoặc localhost và cho phép micro. Khi chấm tự động, Chrome gửi âm thanh tới máy chủ nhận dạng giọng nói của Google (Edge: Microsoft). hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.</p></section>`;
     view.onclick = (e) => {
       const b = e.target.closest('[data-feat]');
       if (!b || b.disabled) return;
       const f = feats.find((x) => x.key === b.dataset.feat);
+      if (f.free) { location.hash = '#speak/free'; return; }
       const pool = f.pool();
       startSpeak(sampleN(pool, 10), f.name, '#speak', null);
     };
@@ -1365,10 +1409,12 @@
     const pct = Math.round((SP.i / SP.items.length) * 100);
     const tips = soundTips(it);
     const v = SP.verdict;
+    const sc = it.sent && SP.said ? scoreSpeech(it.word, SP.said) : null; // câu: chấm theo tỉ lệ từ khớp, tô màu từng từ
+    const scWords = sc ? `<div class="sc-words">${sc.T.map((w, k) => `<span class="${sc.matched[k] ? 'okw' : 'missw'}">${esc(w)}</span>`).join(' ')}</div>` : '';
     let result = '';
-    if (SP.rec) result = '<p class="muted center">Đang nghe… hãy đọc to từ trên, rồi bấm “Dừng”.</p>';
-    else if (v === 'ok') result = Recog.C ? `<div class="result ok">Đọc đúng! Máy nghe được: “${esc(SP.said)}”</div>` : '<div class="result ok">Tốt lắm! Cứ tiếp tục luyện nhé.</div>';
-    else if (v === 'bad') result = `<div class="result bad">${SP.said ? `Máy nghe được: “${esc(SP.said)}”. Chưa giống từ <b>${esc(it.word)}</b>.` : 'Máy chưa nghe rõ. Hãy nói to hơn và thử lại.'}</div>`;
+    if (SP.rec) result = `<p class="muted center">Đang nghe… hãy đọc to ${it.sent ? 'cả câu' : 'từ'} trên, rồi bấm “Dừng”.</p>`;
+    else if (v === 'ok') result = !Recog.C ? '<div class="result ok">Tốt lắm! Cứ tiếp tục luyện nhé.</div>' : it.sent ? `<div class="result ok">Đọc tốt! Khớp ${sc.pct}% số từ.${scWords}<small>Máy nghe được: “${esc(SP.said)}”</small></div>` : `<div class="result ok">Đọc đúng! Máy nghe được: “${esc(SP.said)}”</div>`;
+    else if (v === 'bad') result = `<div class="result bad">${SP.said ? (it.sent ? `Khớp ${sc.pct}% số từ, cần từ ${it.pass}%. Nghe lại câu mẫu rồi thử lần nữa.${scWords}<small>Máy nghe được: “${esc(SP.said)}”</small>` : `Máy nghe được: “${esc(SP.said)}”. Chưa giống từ <b>${esc(it.word)}</b>.`) : 'Máy chưa nghe rõ. Hãy nói to hơn và thử lại.'}</div>`;
     else if (v === 'self') result = '<div class="result">Máy không chấm được ở trình duyệt này. Hãy nghe lại bản ghi và so sánh với mẫu.</div>';
     const needSelf = v === 'self' && SP.results[SP.i] == null;
     view.innerHTML = `
@@ -1377,7 +1423,7 @@
         <div class="s-top"><button class="icon-btn" id="sp-exit" aria-label="Thoát">✕</button><div class="progress"><i style="width:${pct}%"></i></div><span class="s-count">${SP.i}/${SP.items.length}</span></div>
         <div class="s-counts"><span class="k-learn">Đúng ${SP.results.filter((r) => r).length}</span><span class="s-meta">${esc(SP.title)}</span></div>
         <div id="stage">
-          <div class="prompt"><div class="fc-word">${it.emoji && Store.settings.showEmoji !== false ? it.emoji + ' ' : ''}${esc(it.word)}</div>${it.ipa ? `<span class="ipa">/${esc(it.ipa)}/</span>` : ''}<button class="icon-btn" data-say="${esc(it.word)}" aria-label="Nghe mẫu">🔊</button></div>
+          <div class="prompt"><div class="fc-word ${it.sent ? 'long' : ''}">${it.emoji && Store.settings.showEmoji !== false ? it.emoji + ' ' : ''}${esc(it.word)}</div>${it.ipa ? `<span class="ipa">/${esc(it.ipa)}/</span>` : ''}<button class="icon-btn" data-say="${esc(it.word)}" aria-label="Nghe mẫu">🔊</button></div>
           ${it.vi ? `<p class="muted center">${esc(it.vi)}</p>` : ''}
           <div class="prompt"><button class="btn" data-say="${esc(it.word)}" data-rate="0.55">🐢 Nghe chậm</button></div>
           ${tips.length ? `<div class="card tipbox"><b>Gợi ý phát âm</b>${tips.map((t) => `<p><b>${esc(t.name)}.</b> ${esc(t.tip)}</p>`).join('')}</div>` : ''}
@@ -1399,7 +1445,7 @@
     SP.rec = true; SP.verdict = null; SP.said = null;
     if (Recog.C) Recog.start();
     const my = ++SP.token;
-    SP.timer = setTimeout(() => { if (SP && SP.token === my && SP.rec) spFinish(); }, 6000);
+    SP.timer = setTimeout(() => { if (SP && SP.token === my && SP.rec) spFinish(); }, SP.items[SP.i].sent ? 14000 : 6000);
     drawSpeak();
   }
 
@@ -1413,7 +1459,7 @@
     const it = SP.items[SP.i];
     if (!Recog.C) { SP.verdict = 'self'; SP.said = ''; return drawSpeak(); }
     SP.said = said;
-    const ok = !!said && scoreSpeech(it.word, said).pct === 100;
+    const ok = !!said && scoreSpeech(it.word, said).pct >= (it.pass || 100); // từ: phải khớp hết; câu: khớp từ 75% số từ
     SP.verdict = ok ? 'ok' : 'bad';
     spRecord(it, ok);
     drawSpeak();
@@ -1464,8 +1510,8 @@
       <section class="card summary">
         <div class="dango-wrap">${Mascot.svg(pct >= 80 ? 'cheer' : pct >= 50 ? 'happy' : 'think', 88)}</div>
         <h1>Xong luyện nói</h1>
-        <div class="stats"><div class="stat"><b>${ok}/${total}</b><span>từ đọc đúng</span></div><div class="stat"><b>${pct}%</b><span>chính xác</span></div></div>
-        <p class="muted">${pct >= 80 ? 'Phát âm rất tốt!' : 'Hãy nghe lại mẫu, làm theo gợi ý và thử thêm lần nữa.'} Những từ đọc sai đã được thêm vào Từ khó.</p>
+        <div class="stats"><div class="stat"><b>${ok}/${total}</b><span>${items.every((it) => it.sent) ? 'câu đọc tốt' : 'từ đọc đúng'}</span></div><div class="stat"><b>${pct}%</b><span>chính xác</span></div></div>
+        <p class="muted">${pct >= 80 ? 'Phát âm rất tốt!' : 'Hãy nghe lại mẫu, làm theo gợi ý và thử thêm lần nữa.'}${items.every((it) => it.sent) ? '' : ' Những từ đọc sai đã được thêm vào Từ khó.'}</p>
         ${missHTML ? `<h2>Những từ cần luyện thêm</h2><ul class="misslist">${missHTML}</ul>` : ''}
         <div class="row wrap"><button class="btn primary" id="sp-again">Luyện lại</button><button class="btn" id="sp-back">${back === '#speak' ? 'Chọn bài khác' : 'Quay lại bài'}</button></div>
       </section>`;
@@ -1477,6 +1523,116 @@
     };
   }
   function stopSpeakKeep() { if (SP && SP.url) URL.revokeObjectURL(SP.url); SP = null; }
+
+  /* ----- Nói tự do: trả lời một câu hỏi bằng tiếng Anh, rồi xem bản chép lời của trình duyệt và các lỗi cơ bản ----- */
+  const FREE_PROMPTS = [
+    ['What did you do today?', 'Hôm nay bạn đã làm gì?'],
+    ['What was the best part of your day?', 'Điều tuyệt nhất trong ngày của bạn là gì?'],
+    ['What did you eat today? Did you like it?', 'Hôm nay bạn đã ăn gì? Bạn có thích không?'],
+    ['Tell me about one person in your family.', 'Hãy kể về một người trong gia đình bạn.'],
+    ['Describe your best friend.', 'Hãy tả người bạn thân nhất của bạn.'],
+    ['What do you usually do on weekends?', 'Cuối tuần bạn thường làm gì?'],
+    ['Describe your home.', 'Hãy tả ngôi nhà của bạn.'],
+    ['What is your dream job? Why?', 'Công việc mơ ước của bạn là gì? Vì sao?'],
+    ['Describe a place you want to visit.', 'Hãy tả một nơi bạn muốn đến.'],
+    ['What do you usually do in the morning?', 'Buổi sáng bạn thường làm gì?'],
+    ['What is your favorite food? How do you make it?', 'Món ăn bạn thích nhất là gì? Nấu thế nào?'],
+    ['What did you learn today?', 'Hôm nay bạn đã học được gì?']
+  ];
+  const FREE_MAX_MS = 60000;
+  let FS = null;
+
+  function stopFree() {
+    if (!FS) return;
+    FS.token++;
+    clearTimeout(FS.timer);
+    if (FS.rec) { Rec.stop(); Recog.stop(); }
+    if (FS.url) URL.revokeObjectURL(FS.url);
+    TTS.cancel();
+    FS = null;
+  }
+
+  function startFree() {
+    stopFree();
+    const p = pick(FREE_PROMPTS);
+    FS = { prompt: { en: p[0], vi: p[1] }, rec: false, url: null, said: null, token: 0, timer: null };
+    drawFree();
+  }
+
+  /* Bản chép lời không có dấu câu và thường không viết hoa: viết hoa chữ đầu, chữ I và thêm dấu chấm cuối để bộ kiểm tra lỗi
+   * không báo nhầm chuyện trình bày; chỉ giữ lại các lỗi ngữ pháp (chủ vị, a/an, lỗi hay gặp của người Việt). */
+  function freeText(said) {
+    let t = String(said).trim().replace(/\bi\b/g, 'I');
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    return /[.!?]$/.test(t) ? t : t + '.';
+  }
+
+  function drawFree() {
+    const f = FS;
+    let report = '';
+    if (f.said != null) {
+      if (!f.said) report = '<div class="result bad">Máy chưa nghe rõ lời bạn nói. Hãy nói to hơn, gần micro hơn và thử lại.</div>';
+      else {
+        const text = freeText(f.said);
+        const st = Writing.stats(text);
+        const issues = Writing.check(text).filter((t) => t.kind === 'error' && t.msg.indexOf('viết hoa') < 0);
+        const used = new Map();
+        Writing.tokens(f.said).forEach((t) => { const w = Data.lookup(t); if (w && Store.card(w.id)) used.set(w.id, w); });
+        report = `<section class="card"><h2>Bạn đã nói</h2><p class="said">“${esc(f.said)}”</p>
+          <div class="stats"><div class="stat"><b>${st.words}</b><span>từ</span></div><div class="stat"><b>${used.size}</b><span>từ đã học bạn dùng</span></div></div>
+          ${used.size ? `<div class="hardlist">${Array.from(used.values()).slice(0, 14).map((w) => `<span class="hardw">${esc(w.word)}</span>`).join('')}</div>` : ''}
+          ${issues.length ? `<h3>Lỗi cơ bản có thể có</h3><ul class="misslist">${issues.map((t) => `<li>${esc(t.msg)}${t.fix ? ` <small class="muted">“${esc(t.found)}” → “${esc(t.fix)}”</small>` : ''}</li>`).join('')}</ul>` : '<p class="hint">Chưa thấy lỗi cơ bản nào trong lời bạn nói. 👍</p>'}
+          <p class="hint">Đây là bản chép của trình duyệt nên có thể sai ở chỗ nó nghe nhầm, hoặc tự sửa ngữ pháp giúp bạn. Chỉ nên dùng để tham khảo.</p></section>`;
+      }
+    }
+    view.innerHTML = `
+      <a class="back" href="#speak">‹ Luyện nói</a>
+      <section class="page-h"><h1>Nói tự do</h1><p class="muted">Trả lời câu hỏi bên dưới bằng tiếng Anh, vài câu là đủ (khoảng 30 giây). Không cần hoàn hảo, quan trọng là mở miệng nói.</p></section>
+      <section class="card center-card"><h2>${esc(f.prompt.en)}</h2><p class="muted">${esc(f.prompt.vi)}</p>
+        <div class="prompt"><button class="btn primary lg ${f.rec ? 'rec' : ''}" data-fs="rec" ${Rec.supported && Recog.C ? '' : 'disabled'}>${f.rec ? '⏹ Dừng' : '🎤 Bấm và nói'}</button>${f.url ? '<button class="btn" data-fs="mine">▶ Nghe bản ghi của bạn</button>' : ''}<button class="btn ghost" data-fs="other">🔀 Câu hỏi khác</button></div>
+        ${f.rec ? '<p class="muted center">Đang nghe… nói xong thì bấm “Dừng” (tự dừng sau 60 giây).</p>' : ''}
+        ${Recog.C ? '' : '<p class="notice">Trình duyệt này không chép được lời nói. Hãy dùng Chrome hoặc Edge.</p>'}
+        ${Rec.supported ? '' : '<p class="notice">Trình duyệt không cho dùng micro. Mở trang bằng https hoặc localhost trên Chrome, Edge hoặc Safari.</p>'}
+      </section>
+      ${report}
+      <p class="hint center">Chrome gửi âm thanh tới máy chủ nhận dạng giọng nói của Google (Edge: Microsoft) để chép lời. hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.</p>`;
+    view.onclick = onFreeClick;
+  }
+
+  async function freeToggle() {
+    if (FS.rec) return freeFinish();
+    TTS.cancel();
+    try { await Rec.start(); } catch (err) { toast('Không mở được micro. Hãy cho phép trình duyệt dùng micro (cần https hoặc localhost).'); return; }
+    if (!FS) { Rec.stop(); return; }
+    if (FS.url) { URL.revokeObjectURL(FS.url); FS.url = null; }
+    FS.rec = true; FS.said = null;
+    Recog.start();
+    const my = ++FS.token;
+    FS.timer = setTimeout(() => { if (FS && FS.token === my && FS.rec) freeFinish(); }, FREE_MAX_MS);
+    drawFree();
+  }
+
+  async function freeFinish() {
+    if (!FS || !FS.rec) return;
+    clearTimeout(FS.timer);
+    FS.rec = false;
+    const [blob, said] = await Promise.all([Rec.stop(), Recog.stop()]);
+    if (!FS) return;
+    if (blob && blob.size) FS.url = URL.createObjectURL(blob);
+    FS.said = String(said || '').trim();
+    Store.logSpeak(!!FS.said);
+    drawFree();
+  }
+
+  function onFreeClick(e) {
+    if (!FS) return;
+    const b = e.target.closest('button');
+    if (!b) return;
+    const a = b.dataset.fs;
+    if (a === 'rec') return freeToggle();
+    if (a === 'mine') { const au = new Audio(FS.url); au.play().catch(() => {}); return; }
+    if (a === 'other') startFree();
+  }
 
   /* ================= NGHE ================= */
   const LISTEN_MODES = [
@@ -1687,7 +1843,7 @@
     view.onsubmit = onListenSubmit;
   }
 
-  const listenAudio = (say, extra = '') => `<div class="prompt"><button class="btn lg" data-say="${esc(say)}" data-rate="${L.rate}">🔊 Nghe <kbd>P</kbd></button><button class="btn" data-say="${esc(say)}" data-rate="0.55">🐢 Nghe chậm <kbd>S</kbd></button>${extra}</div>`;
+  const listenAudio = (say, extra = '') => `<div class="prompt"><button class="btn lg" data-say="${esc(say)}" data-rate="${L.rate}" data-mix="1">🔊 Nghe <kbd>P</kbd></button><button class="btn" data-say="${esc(say)}" data-rate="0.55" data-mix="1">🐢 Nghe chậm <kbd>S</kbd></button>${extra}</div>`;
 
   function nextListenQ() {
     if (!L) return;
@@ -1700,7 +1856,7 @@
     L.near = false;
     L.typed = '';
     drawListenQ();
-    if (L.cur.type !== 'dialog') TTS.speak(L.cur.say, { rate: L.rate });
+    if (L.cur.type !== 'dialog') TTS.speak(L.cur.say, { rate: L.rate, mix: true });
   }
 
   function optionsHTML(labels, q, extraFn) {
@@ -1851,14 +2007,19 @@
     const k = e.key;
     if (L.phase === 'intro') { if (k === 'Enter') { const b = $('#l-start'); if (b) { e.preventDefault(); b.click(); } } return; }
     if (!L.cur) return;
-    if (k === 'p' || k === 'P') { if (L.cur.type === 'dialog') listenPlayAll(L.rate); else TTS.speak(L.cur.say, { rate: L.rate }); return; }
-    if (k === 's' || k === 'S') { if (L.cur.type === 'dialog') listenPlayAll(0.55); else TTS.speak(L.cur.say, { rate: 0.55 }); return; }
+    if (k === 'p' || k === 'P') { if (L.cur.type === 'dialog') listenPlayAll(L.rate); else TTS.speak(L.cur.say, { rate: L.rate, mix: true }); return; }
+    if (k === 's' || k === 'S') { if (L.cur.type === 'dialog') listenPlayAll(0.55); else TTS.speak(L.cur.say, { rate: 0.55, mix: true }); return; }
     if (k >= '1' && k <= '4' && !L.answered) { const b = $(`[data-opt="${+k - 1}"]`); if (b) { e.preventDefault(); b.click(); } return; }
     if ((k === 'Enter' || (k === ' ' && tag !== 'button')) && L.answered) { const b = $('[data-l="next"]'); if (b) { e.preventDefault(); b.click(); } }
   });
 
   /* ----- Hội thoại nhiều giọng ----- */
-  function dialogVoices() {
+  function dialogVoices(seed) {
+    if (Store.settings.listenMix) {
+      // Nhiều giọng: hai người nói là hai giọng vùng khác nhau, cố định theo bài (bài khác thì cặp giọng khác)
+      const p = TTS.accentPool();
+      if (p.length >= 2) { const h = TTS.hash(String(seed)), i = h % p.length; return [p[i], p[(i + 1 + (Math.floor(h / p.length) % (p.length - 1))) % p.length]]; }
+    }
     const vs = TTS.voices();
     const us = vs.filter((v) => /en[-_]US/i.test(v.lang));
     const pool = us.length >= 2 ? us : vs;
@@ -1868,7 +2029,7 @@
     if (!L) return;
     const text = L.qs[0].text;
     const my = ++L.token;
-    if (!L.voices) L.voices = dialogVoices() || [];
+    if (!L.voices) L.voices = dialogVoices(L.qs[0].text.id) || [];
     const speakers = [];
     TTS.cancel();
     for (const s of text.sentences) {
@@ -2718,6 +2879,7 @@
     const sel = (cur, arr) => arr.map(([v, l]) => `<option value="${v}" ${String(cur) === v ? 'selected' : ''}>${l}</option>`).join('');
     const voices = TTS.voices();
     const voiceOpts = ['<option value="">Tự chọn giọng tốt nhất</option>'].concat(voices.map((v) => `<option value="${esc(v.name)}" ${s.voice === v.name ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`)).join('');
+    const accents = TTS.accentNames();
     view.innerHTML = `
       <section class="page-h"><h1>Cài đặt</h1><p class="muted">Mọi thiết lập và tiến độ học được lưu ngay trong trình duyệt này.</p></section>
       <section class="card form">
@@ -2737,6 +2899,8 @@
         <label class="field"><span>Tốc độ đọc mặc định: <output id="s-rate-o">${Number(s.rate).toFixed(2)}×</output></span><input type="range" id="s-rate" min="0.5" max="1.2" step="0.05" value="${s.rate}"></label>
         <button class="btn sm" id="s-test" ${TTS.ok ? '' : 'disabled'}>🔊 Thử giọng</button>
         ${TTS.ok ? '' : '<p class="notice">Trình duyệt này không hỗ trợ đọc to.</p>'}
+        <label class="field"><span>Giọng khi luyện nghe</span><select class="input" id="s-lmix" ${TTS.ok ? '' : 'disabled'}>${sel(s.listenMix ? 'mix' : 'one', [['one', 'Một giọng (giọng đã chọn ở trên)'], ['mix', 'Nhiều giọng vùng khác nhau']])}</select></label>
+        <p class="hint">${accents.length >= 2 ? `Máy bạn có giọng ${esc(accents.join(', '))}. Ở bài Nghe, mỗi câu một giọng (bấm nghe lại vẫn giữ giọng đó), để quen với cách nói của nhiều vùng.` : accents.length === 1 ? `Máy bạn mới có giọng ${esc(accents[0])} nên chưa đổi giọng được. Cài thêm giọng tiếng Anh trong cài đặt của hệ điều hành rồi mở lại trang này.` : 'Trình duyệt chưa cho biết giọng đọc tiếng Anh nào trên máy này nên chưa đổi giọng được. Cài thêm giọng tiếng Anh trong cài đặt của hệ điều hành rồi mở lại trang này.'}</p>
       </section>
       <section class="card form">
         <h2>Giao diện và hiệu ứng</h2>
@@ -2780,6 +2944,7 @@
       else if (id === 's-emoji') s.showEmoji = e.target.checked;
       else if (id === 's-unlock') s.unlockAll = e.target.checked;
       else if (id === 's-voice') s.voice = e.target.value;
+      else if (id === 's-lmix') s.listenMix = e.target.value === 'mix';
       else if (id === 's-sound') { s.sound = e.target.checked; if (s.sound) { FX.sound('correct'); Store.bump('soundUsed'); checkBadges(); } }
       else if (id === 's-haptic') { s.haptics = e.target.checked; if (s.haptics) FX.haptic(30); }
       else if (id === 's-theme') { s.theme = e.target.value; applyTheme(); }
@@ -2842,6 +3007,6 @@
   Store.setStat('skinMask', Store.stat('skinMask') | skinBit(Store.settings.skin || 'matcha')); // giao diện đang dùng tính là đã thử
   (window.AppModules || []).forEach((init) => init(App));
 
-  window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L, speak: () => SP, placement: () => PL };
+  window.hiuhf0 = { Data, Store, SRS, session: () => S, listen: () => L, speak: () => SP, drawSpeak: () => { if (SP) drawSpeak(); }, free: () => FS, drawFree: () => { if (FS) drawFree(); }, placement: () => PL, queue: buildQueue };
   route();
 })();

@@ -192,6 +192,15 @@ const Data = (() => {
   });
   const inTopic = (w, key) => w.topic === key || w.tags.indexOf(key) >= 0;
 
+  /* Từ khác cùng loại từ và cùng nghĩa tiếng Việt (movie / film, gift / present), để bài gõ từ nghĩa không chấm sai khi
+   * người học gõ một từ đồng nghĩa. Bỏ qua cấp A0: ở đó các từ chung nghĩa là dạng chia của nhau (was / were, will / would). */
+  const viKey = (w) => w.pos + '|' + w.vi.toLowerCase().replace(/\s+/g, ' ').trim();
+  function sameMeaning(w) {
+    if (!w || w.level === 'A0') return [];
+    const k = viKey(w);
+    return words.filter((x) => x !== w && x.level !== 'A0' && viKey(x) === k);
+  }
+
   /* ----- Thông tin mở rộng: ví dụ thêm, cụm kết hợp, họ từ, ghi chú (js/data/extras.js) ----- */
   String((typeof window !== 'undefined' && window.EXTRAS_RAW) || '').split('\n').forEach((line) => {
     const t = line.trim();
@@ -249,5 +258,5 @@ const Data = (() => {
   const pairs = (typeof window !== 'undefined' && window.PAIRS) || [];
   const ipaOf = (word) => ipaMap[String(word).toLowerCase()] || '';
 
-  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, inTopic, irregular, irrMap, warnings };
+  return { LEVELS, TOPICS, topicMap, words, byId, lookup, texts, quiz, pairs, ipaOf, units, unitById, unitOfWord, idOf, setCustom, inTopic, sameMeaning, irregular, irrMap, warnings };
 })();
