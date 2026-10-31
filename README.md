@@ -29,11 +29,20 @@ Web học từ vựng tiếng Anh, chạy hoàn toàn trên trình duyệt (HTML
 - **Thư viện từ**: tìm theo tiếng Anh hoặc tiếng Việt, lọc theo cấp độ CEFR, chủ đề, cấp thuộc; ưu tiên học một từ hoặc đánh dấu "đã nhớ rõ".
 - **Phiên âm IPA (Anh–Mỹ)** cho cả 2.369 từ, hiện trên thẻ, bài tập, thư viện và bảng tra từ; tắt/bật trong Cài đặt. Dữ liệu ở `js/data/ipa.js`, lấy từ open-dict-data/ipa-dict (MIT) và chỉnh tay các từ đồng tự khác âm (read, live, use…).
 - **Lộ trình** gồm 249 bài nhỏ (khoảng 10 từ mỗi bài). Mỗi bài có 4 bước: học từ, luyện nghe, luyện nói, kiểm tra cuối (đạt từ 70% thì mở bài tiếp theo). Bài đã biết thì bấm "Mình đã biết hết, kiểm tra ngay" (đạt từ 70% là qua), hoặc làm bài xếp trình độ, hoặc mở khóa toàn bộ trong Cài đặt.
-- **Luyện nói**: đọc to từng từ, trình duyệt (Chrome, Edge) tự chấm; mỗi từ kèm gợi ý đặt lưỡi, môi cho các âm khó (th, r, l, sh, ch, ng, âm cuối, nguyên âm ngắn dài). Nhóm luyện theo âm hoặc theo từ khó của bạn. Có thêm **Đọc to câu ví dụ** (chấm từng từ, đạt từ 75% số từ) và **Nói tự do** (trả lời một câu hỏi bằng tiếng Anh, xem bản chép lời, số từ đã học bạn dùng và các lỗi ngữ pháp cơ bản). Chrome gửi âm thanh tới máy chủ nhận dạng giọng nói của Google (Edge: Microsoft); hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.
+- **Luyện nói**: đọc to từng từ, trình duyệt (Chrome, Edge) tự chấm; mỗi từ kèm gợi ý đặt lưỡi, môi cho các âm khó (th, r, l, sh, ch, ng, âm cuối, nguyên âm ngắn dài). Nhóm luyện theo âm hoặc theo từ khó của bạn. Có thêm **Đọc to câu ví dụ** (chấm từng từ, đạt từ 75% số từ) và **Nói tự do** (trả lời một câu hỏi bằng tiếng Anh, xem bản chép lời, số từ đã học bạn dùng và các lỗi ngữ pháp cơ bản). Chrome gửi âm thanh tới máy chủ nhận dạng giọng nói của Google (Edge: Microsoft); hiuhf0 không có máy chủ riêng và không tự lưu bản ghi nào (chỉ khi bạn bấm “Lưu làm bản ghi mốc” ở Luyện phát âm thì bản ghi nằm trong trình duyệt này).
 - **Từ khó** tự cập nhật: từ làm sai ở bài nghe hoặc bài nói được thêm vào, làm đúng lại thì được bỏ ra.
 - **Nghe** (8 chế độ, thêm Nghe và chọn hình, mỗi lượt 10 câu, chọn cấp A0 đến B1 và tốc độ): nghe và chọn nghĩa, nghe và viết từ, nghe số và giá tiền (phân biệt 13/30, số điện thoại), nghe giờ (chọn đồng hồ), nghe và sắp xếp câu, nghe và chép câu (chấm từng từ), nghe hiểu hội thoại (2 giọng, có câu hỏi cho 18 bài). Có nghe chậm, phím tắt, thống kê từng chế độ. Cài đặt có mục **Giọng khi luyện nghe**: mỗi câu một giọng vùng (Mỹ, Anh, Úc…) nếu máy có, bấm nghe lại vẫn giữ giọng đó.
-- **Phát âm**: 13 nhóm cặp âm dễ nhầm (ship/sheep, light/right, think/sink…) kèm IPA, nghe từng từ và bài **Luyện tai** (nghe rồi chọn từ đúng).
+- **Phát âm**: 22 nhóm cặp âm dễ nhầm (ship/sheep, light/right, think/sink, âm cuối, cụm phụ âm…) kèm IPA, nghe từng từ và bài **Luyện tai** (nghe rồi chọn từ đúng, mỗi lần một giọng vùng khác nhau nếu máy có).
 - **Trọng âm, đuôi từ, ghép cụm** (Luyện → Trọng âm, đuôi từ, cụm từ): ba dạng bài 10 câu sinh từ dữ liệu có sẵn. **Trọng âm**: nghe một từ, chọn âm tiết được nhấn (suy ra từ dấu ˈ trong IPA, khoảng 1.400 từ). **Đuôi -s và -ed**: đuôi đọc là /s/ /z/ /ɪz/ hay /t/ /d/ /ɪd/ (suy ra từ âm cuối của IPA từ gốc, có giải thích). **Ghép cụm**: chọn từ đúng cho cụm kết hợp (make a decision, do homework, say hello, tell a story…); các bộ từ dễ nhầm do người soạn chọn tay để mỗi câu chỉ có một đáp án.
+- **Luyện phát âm** (Luyện → Luyện phát âm, địa chỉ `#pron`): chương trình đi từ đo đến luyện, viết cho người Việt học tiếng Anh.
+  - **Bài đo** (khoảng 10 phút, 34 câu: nghe phân biệt 10 cặp âm, trọng âm, đuôi -s/-ed, đọc thử 6 mục) cho **hồ sơ** theo 5 nhóm: nguyên âm, phụ âm đầu, âm cuối, cụm phụ âm, trọng âm và nhịp. Mức vững của mỗi nhóm âm được ước lượng từ các lần luyện của bạn (lần cũ nhạt dần sau 30 ngày; nhóm mới đo vài lần thì ghi “ít dữ liệu” chứ không khẳng định). Mỗi lần đo lưu một ảnh chụp hồ sơ (giữ 12 lần gần nhất) và trang chính hiện ▲ ▼ so với lần đo trước. Đây là cách chọn việc cần luyện, không phải thang đánh giá trình độ.
+  - **Kế hoạch 5 phút mỗi ngày**: chọn 3 nhóm cần luyện nhất (yếu, quan trọng với người Việt, đến hạn ôn), cho nghe phân biệt (mỗi lần một giọng vùng khác nhau, vì nghe nhiều giọng giúp tai quen hơn nghe một giọng) rồi đọc.
+  - **25 thẻ hướng dẫn tạo âm** (20 thẻ có sơ đồ mặt cắt miệng: lưỡi, môi, chỗ chạm, luồng hơi, dây thanh rung hay không): các bước đặt lưỡi và môi, so với tiếng Việt, cách tự kiểm tra bằng gương, bàn tay hoặc tờ giấy, cách sửa khi nghe chưa đúng. Sơ đồ chỉ minh họa vị trí tương đối và nội dung nên được giáo viên ngữ âm xem lại.
+  - **Bài đọc có thu âm**: thanh mức to, kiểm tra bản thu (quá nhỏ, vỡ tiếng, quá ngắn thì không tính, ồn thì cảnh báo), nhận dạng giọng nói của trình duyệt xét nhiều phương án (chỉ là dấu hiệu: tối đa 3 lần thử, không trừ điểm SRS), nghe lại bản của mình cạnh bản mẫu và tự đánh giá.
+  - **Phân tích giọng (thử nghiệm)**: với bài trọng âm và ngữ điệu, máy đoán âm tiết nào nổi nhất và cuối câu lên hay xuống giọng từ độ to, độ dài và cao độ của bản thu, kèm biểu đồ. Phép đo này mới được kiểm tra bằng tín hiệu tổng hợp và giọng đọc của máy, dễ sai khi có tạp âm, nên chỉ để gợi ý nghe lại.
+  - **Chấm âm vị (tùy chọn, tắt mặc định)**: Azure AI Speech Pronunciation Assessment bằng khóa của chính bạn (âm thanh gửi tới Microsoft), hoặc mô hình nhận dạng âm vị chạy ngay trên máy (tải một lần khoảng 355 MB, âm thanh không rời máy). Kết quả hiện từng âm (đúng, cần chú ý, sai, thiếu, bị thay) kèm đường dẫn tới thẻ cách tạo âm.
+  - **Bản ghi của tôi**: lưu các bản ghi mốc trong trình duyệt (IndexedDB, tối đa 40 bản), nghe lại bản cũ cạnh bản mới, gửi cho người nhận xét qua Web Share (không có thì tải file về và chép sẵn lời nhắn).
+  - **Phòng thử nghiệm**: bạn đọc đúng và cố ý đọc sai 8 cặp âm, ứng dụng cho biết nhận dạng giọng nói của trình duyệt và bộ chấm âm vị bắt được bao nhiêu lỗi thật, báo nhầm bao nhiêu lần đọc đúng, để biết có nên tin chúng với giọng của chính bạn không.
 - **Từ khó**: tự gom những từ bạn từng quên, luyện riêng 20 từ mỗi lượt; có bộ lọc “Từ khó” và lọc theo loại từ trong thư viện.
 - **Mục tiêu hôm nay** hiện ngay ở trang chính.
 - **Dùng offline / cài như ứng dụng (PWA)** khi mở qua https (GitHub Pages).
@@ -63,7 +72,7 @@ Chạy thử trên máy: mở thư mục bằng một server tĩnh bất kỳ, v
 index.html
 css/style.css
 fonts/        font Nunito (OFL) tải sẵn để chạy offline
-tests/        kiểm thử: node --test (srs, data, writing, drills, tts) và tests/e2e (trình duyệt thật)
+tests/        kiểm thử: node --test (srs, data, writing, drills, tts, audio, pron, score) và tests/e2e (trình duyệt thật)
 js/
   app.js       giao diện và các màn hình
   srs.js       thuật toán lặp lại ngắt quãng và cách xếp cấp thuộc
@@ -78,6 +87,11 @@ js/
   games.js     trò chơi nhỏ và Từ của ngày (mô-đun)
   verbs.js     bảng và luyện động từ bất quy tắc (mô-đun)
   drills.js    trọng âm, đuôi -s/-ed, ghép cụm: sinh câu hỏi từ IPA và extras (hàm thuần, có test) cùng giao diện (mô-đun)
+  audio.js     phân tích âm thanh thu từ micro: chất lượng bản thu, cao độ, âm tiết, hướng giọng (hàm thuần, có test)
+  pron.js      logic luyện phát âm: bằng chứng theo nhóm âm, hồ sơ, kế hoạch, so âm vị, sơ đồ miệng SVG (hàm thuần, có test)
+  pron-score.js  chấm âm vị tùy chọn: Azure hoặc mô hình chạy trên máy; phần phân tích kết quả là hàm thuần, có test
+  pron-ui.js   trang #pron: hồ sơ, bài đo, kế hoạch, thẻ hướng dẫn, bài nghe và trình chạy chuỗi bài (mô-đun)
+  pron-rec.js  bài đọc có thu âm, bản ghi mốc (IndexedDB), cài đặt chấm âm vị, Phòng thử nghiệm (mô-đun)
   (các mô-đun nạp trước app.js, đăng ký bằng AppModules.push((App) => {...}) và nhận App.routes, App.slots, App.hubs...)
   (sw.js, manifest.webmanifest, icons/ ở thư mục gốc: PWA dùng offline)
   data.js      đọc và lập chỉ mục dữ liệu từ vựng
@@ -96,25 +110,26 @@ js/
     texts.js, texts-a0.js            bài shadowing / dịch bài
     quiz.js                          câu hỏi nghe hiểu cho từng bài
     ipa.js                           phiên âm IPA từng từ (từ|IPA)
-    pairs.js                         cặp âm dễ nhầm
+    pairs.js                         22 nhóm cặp âm dễ nhầm (cặp tối thiểu, kèm IPA và mẹo nghe)
+    pron.js                          dữ liệu luyện phát âm: nhóm âm, thẻ hướng dẫn tạo âm và sơ đồ miệng, cấu hình bài đo, dạng đọc nhẹ của từ chức năng
 ```
 
 ## Kiểm thử
 
-Kiểm thử đơn vị (SRS, dữ liệu từ vựng, trợ giúp viết, các bài sinh từ dữ liệu, chọn giọng đọc) chạy bằng Node, không cần cài thêm gì:
+Kiểm thử đơn vị (111 kiểm tra: SRS, dữ liệu từ vựng, trợ giúp viết, các bài sinh từ dữ liệu, chọn giọng đọc, phân tích âm thanh bằng tín hiệu tổng hợp, logic luyện phát âm, phân tích kết quả chấm âm vị) chạy bằng Node, không cần cài thêm gì:
 
 ```bash
 node --test
 ```
 
-Kiểm thử trình duyệt (gần 300 kiểm tra trên ứng dụng thật: học và ôn, sticker, nhật ký, trò chơi, các bài luyện...) cần Chrome hoặc Edge:
+Kiểm thử trình duyệt (hơn 400 kiểm tra trên ứng dụng thật: học và ôn, sticker, nhật ký, trò chơi, các bài luyện, luyện phát âm...) cần Chrome hoặc Edge. Bộ luyện phát âm (`08-pron`) giả lập micro, nhận dạng giọng nói, Azure và mô hình trên máy bằng tín hiệu và phản hồi tổng hợp, nên không cần micro, mạng hay khóa dịch vụ:
 
 ```bash
 cd tests/e2e && npm install     # chỉ cài puppeteer-core, không tải trình duyệt
 cd ../.. && node tests/e2e/run.js [tên-bộ-kiểm-thử]
 ```
 
-Đặt `CHROME_PATH` nếu máy không ở đường dẫn quen thuộc, `E2E_REDUCED=1` để chạy với "giảm chuyển động" của hệ điều hành. Cả hai bộ cũng chạy trên GitHub Actions (`.github/workflows/test.yml`).
+Đặt `CHROME_PATH` nếu máy không ở đường dẫn quen thuộc, `E2E_REDUCED=1` để chạy với "giảm chuyển động" của hệ điều hành (nếu máy đang tắt hoạt họa thì bộ `03-ui-effects` sẽ báo lỗi ở vài kiểm tra hiệu ứng, vì ứng dụng cố ý tắt hiệu ứng trong trường hợp đó). Cả hai bộ cũng chạy trên GitHub Actions (`.github/workflows/test.yml`).
 
 **Khi sửa tệp nào của ứng dụng:** đổi số phiên bản ở `sw.js` (`CACHE`) và ở thẻ `app-version` trong `index.html` (có test kiểm tra hai số này khớp), và thêm tệp mới vào danh sách offline của `sw.js`.
 
@@ -141,6 +156,8 @@ Thêm một đối tượng vào mảng trong `js/data/texts.js`:
 
 - Tiến độ lưu trong `localStorage` của từng trình duyệt. Đổi máy hoặc xóa dữ liệu duyệt web sẽ mất, nên hãy dùng **Cài đặt → Xuất file sao lưu** định kỳ.
 - Giọng đọc phụ thuộc vào giọng tiếng Anh có sẵn trong hệ điều hành/trình duyệt. Có thể chọn giọng khác trong Cài đặt.
-- Luyện nói, Đọc to câu và Nói tự do dùng nhận dạng giọng nói của trình duyệt: Chrome gửi âm thanh tới máy chủ của Google (Edge: Microsoft) để chép lời. hiuhf0 không có máy chủ riêng và không lưu bản ghi nào.
+- Luyện nói, Đọc to câu và Nói tự do dùng nhận dạng giọng nói của trình duyệt: Chrome gửi âm thanh tới máy chủ của Google (Edge: Microsoft) để chép lời. hiuhf0 không có máy chủ riêng và không tự lưu bản ghi nào.
+- **Luyện phát âm, quyền riêng tư và độ tin cậy.** Nhận dạng giọng nói của trình duyệt không sinh ra để chấm phát âm (nó hay đoán từ cho đúng ngữ cảnh), phân tích âm tiết và cao độ là phép đo gần đúng, nên ứng dụng chỉ coi chúng là dấu hiệu, gom lại theo từng nhóm âm qua nhiều lần luyện, và có Phòng thử nghiệm để bạn tự đo xem chúng đáng tin tới đâu với giọng của mình. **Azure** (Cài đặt ở `#pron/score`): âm thanh các lần bạn đọc được gửi tới Microsoft và dịch vụ tính phí theo thời lượng; khóa nằm trong một khóa localStorage riêng (`hiuhf0.scorer`), không nằm trong file sao lưu nhưng bất kỳ ai dùng chung hồ sơ trình duyệt này đều đọc được. **Mô hình trên máy**: lần đầu tải thư viện từ jsDelivr và mô hình `robg/speako-phoneme-recognizer` từ Hugging Face (khoảng 355 MB), sau đó chạy offline; mô hình học từ giọng Mỹ bản xứ nên có thể kém chính xác với giọng người Việt. **Bản ghi mốc** chỉ nằm trong IndexedDB của trình duyệt này, không có trong file sao lưu, và xóa dữ liệu duyệt web là mất.
+- Hai nguồn chấm âm vị (Azure, mô hình trên máy) được kiểm thử bằng dữ liệu mẫu theo tài liệu và bằng bản giả lập trong trình duyệt, chưa được thử với dịch vụ thật hay mô hình thật khi phát triển. Nếu gặp lỗi, thông báo hiện ngay ở bước chấm; Phòng thử nghiệm là nơi kiểm tra độ chính xác.
 - Thuật toán SRS là biến thể của SM-2 do mình tự cài đặt, không phải bản sao thuật toán nội bộ của Mochi.
 - Cấp độ A1 đến B1 được xếp tương đối theo khung CEFR, không phải danh sách chính thức.

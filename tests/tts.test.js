@@ -73,3 +73,23 @@ test('máy chỉ có một vùng giọng hoặc không có giọng nào: vẫn �
   assert.equal(t.spoken[0].voice, undefined);
   assert.equal(t.spoken[0].lang, 'en-US');
 });
+
+test("mix: 'always' đổi giọng kể cả khi tắt nhiều giọng trong Cài đặt; seed cho giọng khác ở lần nghe khác", () => {
+  const { TTS, spoken } = load(VOICES, { listenMix: false });
+  const pool = new Set(Array.from(TTS.accentPool(), (v) => v.name));
+  const last = () => spoken[spoken.length - 1].voice.name;
+  const words = ['think', 'sink', 'ship', 'sheep', 'light', 'right', 'bad', 'bat'];
+  const first = words.map((w) => { TTS.speak(w, { mix: 'always', seed: 1 }); return last(); });
+  first.forEach((n) => assert.ok(pool.has(n), n));
+  assert.ok(new Set(first).size >= 2, 'nhiều từ phải ra nhiều giọng, chỉ ra ' + new Set(first).size);
+  const again = words.map((w) => { TTS.speak(w, { mix: 'always', seed: 1 }); return last(); });
+  assert.deepEqual(again, first, 'cùng từ, cùng seed thì cùng giọng');
+  const bySeed = Array.from({ length: 12 }, (_, s) => { TTS.speak('think', { mix: 'always', seed: s }); return last(); });
+  assert.ok(new Set(bySeed).size >= 2, 'seed khác nhau phải có thể ra giọng khác, chỉ ra ' + new Set(bySeed).size);
+  TTS.speak('think');
+  assert.equal(last(), 'Microsoft David', 'không đòi mix thì dùng giọng mặc định');
+  TTS.speak('think', { mix: true });
+  assert.equal(last(), 'Microsoft David', "mix: true vẫn phải bật trong Cài đặt, chỉ 'always' bỏ qua cài đặt");
+  TTS.speak('think', { mix: 'always', seed: 3, voice: VOICES[2] });
+  assert.equal(last(), 'Microsoft Mark', 'voice chỉ định rõ luôn được ưu tiên');
+});

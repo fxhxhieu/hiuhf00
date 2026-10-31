@@ -24,7 +24,40 @@ const Store = (() => {
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 }, usage: { total: 0, days: {} }, custom: [], stats: {}, journal: {}, letters: [] });
+  const blank = () => ({ v: 1, cards: {}, pinned: {}, settings: clone(DEFAULTS), daily: { date: '', newDone: 0, reviewDone: 0 }, log: {}, texts: {}, listen: {}, path: {}, badges: {}, flagged: {}, speak: { n: 0, ok: 0 }, usage: { total: 0, days: {} }, custom: [], stats: {}, journal: {}, letters: [], pron: sanitizePron(null) });
+
+  /* Tiến độ luyện phát âm (js/pron.js): mỗi nhóm âm có tối đa 80 lần luyện gần nhất. Chỉ giữ dữ liệu đúng hình dạng khi nhập file sao lưu. */
+  function sanitizePron(o) {
+    const b = { v: 1, t: {}, diag: null, plan: null, rec: [] };
+    if (!o || typeof o !== 'object') return b;
+    const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+    if (o.t && typeof o.t === 'object') {
+      Object.keys(o.t).slice(0, 80).forEach((k) => {
+        const e = o.t[k];
+        if (!e || !Array.isArray(e.ev)) return;
+        b.t[str(k, 40)] = {
+          ev: e.ev.slice(-80).filter((x) => Array.isArray(x) && x.length >= 4).map((x) => [Number(x[0]) || 0, str(x[1], 10), x[2] ? 1 : 0, Math.max(0, Math.min(400, Number(x[3]) || 0))]),
+          last: Number(e.last) || 0
+        };
+      });
+    }
+    if (o.diag && typeof o.diag === 'object') {
+      b.diag = { ts: Number(o.diag.ts) || 0, n: Number(o.diag.n) || 0, hist: [] };
+      // ảnh chụp hồ sơ sau mỗi lần đo (mức vững theo nhóm lớn, 0 đến 1) để so tiến bộ giữa các lần
+      if (Array.isArray(o.diag.hist)) {
+        b.diag.hist = o.diag.hist.slice(-12).filter((h) => h && h.s && typeof h.s === 'object').map((h) => {
+          const s = {};
+          Object.keys(h.s).slice(0, 12).forEach((k) => { const v = h.s[k] == null || h.s[k] === '' ? NaN : Number(h.s[k]); if (isFinite(v)) s[str(k, 20)] = Math.max(0, Math.min(1, v)); });
+          return { ts: Number(h.ts) || 0, s };
+        });
+      }
+    }
+    if (o.plan && typeof o.plan === 'object') {
+      b.plan = { day: str(o.plan.day, 10), ids: Array.isArray(o.plan.ids) ? o.plan.ids.slice(0, 5).map((s) => str(s, 40)) : [], done: Array.isArray(o.plan.done) ? o.plan.done.slice(0, 10).map((s) => str(s, 20)) : [] };
+    }
+    if (Array.isArray(o.rec)) b.rec = o.rec.slice(-60).filter((r) => r && r.id).map((r) => ({ id: str(r.id, 40), ts: Number(r.ts) || 0, text: str(r.text, 120), target: str(r.target, 40) }));
+    return b;
+  }
 
   function normalize(o) {
     const b = blank();
@@ -57,6 +90,7 @@ const Store = (() => {
         };
       });
     }
+    b.pron = sanitizePron(o.pron);
     if (Array.isArray(o.letters)) {
       const str = (v, n) => String(v == null ? '' : v).slice(0, n);
       b.letters = o.letters.filter((l) => l && l.text).slice(0, 200).map((l) => ({ id: str(l.id, 40) || String(Number(l.created) || Date.now()), title: str(l.title, 100), text: str(l.text, 20000), created: Number(l.created) || 0, openOn: Number(l.openOn) || 0, opened: Number(l.opened) || 0 }));

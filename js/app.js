@@ -85,7 +85,7 @@
     if (!b) return;
     e.stopPropagation();
     if (!TTS.ok) { toast('Trình duyệt này không hỗ trợ đọc to. Hãy thử Chrome, Edge hoặc Safari.'); return; }
-    TTS.speak(b.dataset.say, { rate: b.dataset.rate ? parseFloat(b.dataset.rate) : undefined, mix: b.hasAttribute('data-mix') });
+    TTS.speak(b.dataset.say, { rate: b.dataset.rate ? parseFloat(b.dataset.rate) : undefined, mix: b.dataset.mix === 'always' ? 'always' : b.hasAttribute('data-mix'), seed: b.dataset.seed });
   }, true);
 
   function applyTheme() {
@@ -1400,7 +1400,7 @@
     stopSpeak();
     const items = words.filter((w) => w && w.word);
     if (!items.length) { toast('Chưa có từ nào để luyện.'); return; }
-    SP = { items, title, back: back || '#speak', unit, i: 0, results: [], rec: false, url: null, said: null, verdict: null, token: 0, timer: null };
+    SP = { items, title, back: back || '#speak', unit, i: 0, results: [], rec: false, url: null, said: null, verdict: null, token: 0, timer: null, tries: 0, heard: '', mic: null };
     drawSpeak();
   }
 
@@ -1414,6 +1414,9 @@
     let result = '';
     if (SP.rec) result = `<p class="muted center">Đang nghe… hãy đọc to ${it.sent ? 'cả câu' : 'từ'} trên, rồi bấm “Dừng”.</p>`;
     else if (v === 'ok') result = !Recog.C ? '<div class="result ok">Tốt lắm! Cứ tiếp tục luyện nhé.</div>' : it.sent ? `<div class="result ok">Đọc tốt! Khớp ${sc.pct}% số từ.${scWords}<small>Máy nghe được: “${esc(SP.said)}”</small></div>` : `<div class="result ok">Đọc đúng! Máy nghe được: “${esc(SP.said)}”</div>`;
+    else if (v === 'retry') result = `<div class="result">Máy nghe được: “${esc(SP.heard)}”. Chưa chắc là bạn đọc sai, vì máy còn nghe nhầm nhiều. Nghe mẫu, đọc chậm và rõ từng âm rồi thử lại (lần ${SP.tries}/3).</div>`;
+    else if (v === 'badmic') result = `<div class="result bad">Bản thu chưa tốt nên lần này không tính. ${esc(Pron.micAdvice(SP.mic))}</div>`;
+    else if (v === 'silent') result = '<div class="result">Máy chưa nghe được gì nên lần này không tính. Hãy nói to hơn, gần micro hơn rồi thử lại.</div>';
     else if (v === 'bad') result = `<div class="result bad">${SP.said ? (it.sent ? `Khớp ${sc.pct}% số từ, cần từ ${it.pass}%. Nghe lại câu mẫu rồi thử lần nữa.${scWords}<small>Máy nghe được: “${esc(SP.said)}”</small>` : `Máy nghe được: “${esc(SP.said)}”. Chưa giống từ <b>${esc(it.word)}</b>.`) : 'Máy chưa nghe rõ. Hãy nói to hơn và thử lại.'}</div>`;
     else if (v === 'self') result = '<div class="result">Máy không chấm được ở trình duyệt này. Hãy nghe lại bản ghi và so sánh với mẫu.</div>';
     const needSelf = v === 'self' && SP.results[SP.i] == null;
@@ -1432,7 +1435,7 @@
           ${result}
           ${needSelf ? '<div class="row wrap center-row"><button class="btn" data-sp="selfok">Mình đọc giống mẫu</button><button class="btn" data-sp="selfbad">Mình cần luyện thêm</button></div>' : ''}
         </div>
-        <div id="actions"><div class="act2"><button class="btn primary lg" data-sp="next" ${v ? '' : 'disabled'}><span>${SP.i + 1 >= SP.items.length ? 'Xem kết quả' : 'Từ tiếp theo'}</span></button><button class="btn lg" data-sp="skip"><span>Bỏ qua từ này</span></button></div></div>
+        <div id="actions"><div class="act2"><button class="btn primary lg" data-sp="next" ${v === 'ok' || v === 'bad' || v === 'self' ? '' : 'disabled'}><span>${SP.i + 1 >= SP.items.length ? 'Xem kết quả' : 'Từ tiếp theo'}</span></button><button class="btn lg" data-sp="skip"><span>Bỏ qua từ này</span></button></div></div>
       </section>`;
     view.onclick = onSpeakClick;
   }
@@ -1443,7 +1446,7 @@
     try { await Rec.start(); } catch (err) { toast('Không mở được micro. Hãy cho phép trình duyệt dùng micro (cần https hoặc localhost).'); return; }
     if (!SP) { Rec.stop(); return; }
     SP.rec = true; SP.verdict = null; SP.said = null;
-    if (Recog.C) Recog.start();
+    if (Recog.C) Recog.start({ alts: 5 });
     const my = ++SP.token;
     SP.timer = setTimeout(() => { if (SP && SP.token === my && SP.rec) spFinish(); }, SP.items[SP.i].sent ? 14000 : 6000);
     drawSpeak();
@@ -1459,17 +1462,48 @@
     const it = SP.items[SP.i];
     if (!Recog.C) { SP.verdict = 'self'; SP.said = ''; return drawSpeak(); }
     SP.said = said;
-    const ok = !!said && scoreSpeech(it.word, said).pct >= (it.pass || 100); // từ: phải khớp hết; câu: khớp từ 75% số từ
+    SP.heard = said;
+    // Bản thu hỏng (quá nhỏ, vỡ tiếng, ồn, quá ngắn) hoặc không nghe được gì thì không tính là đọc sai
+    const q = blob && blob.size ? await micCheck(blob) : null;
+    if (!SP) return;
+    SP.mic = q && !q.ok ? q : null;
+    if (SP.mic) { SP.verdict = 'badmic'; return drawSpeak(); }
+    if (!said) { SP.verdict = 'silent'; return drawSpeak(); }
+    let ok;
+    if (it.sent) ok = scoreSpeech(it.word, said).pct >= (it.pass || 100); // câu: khớp từ 75% số từ
+    else {
+      // Từ: máy nghe đúng ngay hoặc từ đúng nằm trong hai phương án đầu thì đạt. Nhận dạng giọng nói còn nhiễu nên cho thử tối đa 3 lần
+      const j = Pron.judgeBest(it.word, Recog.results.length ? Recog.results : [[{ t: said, c: 0 }]]);
+      SP.heard = j.heard || said;
+      SP.tries += 1;
+      ok = Pron.passes(j);
+    }
+    if (!ok && !it.sent && SP.tries < 3) { SP.verdict = 'retry'; return drawSpeak(); }
     SP.verdict = ok ? 'ok' : 'bad';
     spRecord(it, ok);
     drawSpeak();
     answerFx(ok, $('#stage .result'));
   }
 
+  /* Bản thu có dùng được để chấm không (chất lượng âm thanh), hay null nếu không giải mã được */
+  async function micCheck(blob) {
+    try { const d = await Dsp.decodeBlob(blob); return Dsp.quality(d.x, d.sr); } catch (e) { return null; }
+  }
+  /* Ghi một lần đọc từ vào các nhóm âm mà từ đó luyện (chia đều trọng số). kind: prod (nhận dạng giọng nói, nhiễu nên nhẹ) hoặc self. */
+  function pronLog(ipa, ok, kind = 'prod') {
+    const ids = Pron.targetsOfIpa(ipa);
+    if (!ids.length) return;
+    const p = Pron.ensure(Store.get()), now = Date.now();
+    ids.forEach((id) => Pron.record(p, id, kind, ok, now, Pron.KIND_W[kind] / ids.length));
+    Store.save();
+  }
+
   function spRecord(it, ok) {
     SP.results[SP.i] = ok;
     Store.logSpeak(ok);
-    if (it.id) skillResult(it.id, ok);
+    // Từ khó vẫn được ghi nhận, nhưng không kéo lịch ôn lại gần: kết quả nhận dạng giọng nói còn quá nhiễu để phạt thẻ SRS
+    if (it.id) Store.flag(it.id, ok ? -1 : 1);
+    if (it.ipa) pronLog(it.ipa, ok);
   }
 
   function onSpeakClick(e) {
@@ -1485,7 +1519,7 @@
     if (a === 'skip' || a === 'next') {
       if (a === 'skip' && SP.results[SP.i] == null) SP.results[SP.i] = false;
       if (SP.url) { URL.revokeObjectURL(SP.url); SP.url = null; }
-      SP.i += 1; SP.verdict = null; SP.said = null;
+      SP.i += 1; SP.verdict = null; SP.said = null; SP.tries = 0; SP.heard = ''; SP.mic = null;
       if (SP.i >= SP.items.length) return renderSpeakSummary();
       drawSpeak();
     }
@@ -2158,9 +2192,13 @@
     groups.forEach((g) => g.pairs.forEach((p) => all.push({ g, p })));
     if (!all.length) { sq.cur = null; return; }
     const pick = all[Math.floor(Math.random() * all.length)];
-    sq.cur = { sound: pick.g.sound, p: pick.p, target: Math.random() < 0.5 ? 0 : 1 };
+    sq.cur = { sound: pick.g.sound, gid: pick.g.id, p: pick.p, target: Math.random() < 0.5 ? 0 : 1, seed: Math.floor(Math.random() * 1e6) };
     sq.picked = null;
   }
+  // Luyện tai theo kiểu nhiều người nói: mỗi lần nghe một giọng vùng khác nhau (nếu máy có), nghe lại cùng câu vẫn giữ giọng đó
+  const sqSay = (word, rate) => TTS.speak(word, { rate, mix: 'always', seed: sq.cur ? sq.cur.seed : 0 });
+  const guideOfGroup = (id) => { const g = ((window.PRON || {}).guides || []).find((x) => x.targets.indexOf(id) >= 0); return g ? g.id : ''; };
+  const guideLink = (id) => (guideOfGroup(id) ? `<a class="btn sm ghost" href="#pron/guide/${guideOfGroup(id)}">📖 Cách tạo âm</a>` : '');
 
   function drawQuiz() {
     const box = $('#pquiz');
@@ -2179,7 +2217,7 @@
     }).join('');
     const done = sq.picked != null;
     box.innerHTML = `<div class="row between wrap"><span class="muted">Cặp âm: <b>${esc(c.sound)}</b></span><span class="muted">Điểm ${sq.score}/${sq.total} · chuỗi đúng ${sq.streak}</span></div>
-      <div class="prompt"><button class="btn lg" data-say="${esc(word)}">🔊 Nghe từ</button><button class="btn" data-say="${esc(word)}" data-rate="0.55">🐢 Nghe chậm</button></div>
+      <div class="prompt"><button class="btn lg" data-say="${esc(word)}" data-mix="always" data-seed="${c.seed}">🔊 Nghe từ</button><button class="btn" data-say="${esc(word)}" data-rate="0.55" data-mix="always" data-seed="${c.seed}">🐢 Nghe chậm</button></div>
       <p class="muted center">Bạn nghe thấy từ nào?</p>
       <div class="options">${opts}</div>
       ${done ? `<div class="result ${sq.picked === c.target ? 'ok' : 'bad'}">${sq.picked === c.target ? 'Chính xác' : 'Chưa đúng'}: <b>${esc(word)}</b> <span class="ipa">/${esc(c.p[c.target * 2 + 1])}/</span></div><button class="btn primary lg block" data-q="next">Câu tiếp theo <kbd>Space</kbd></button>` : ''}`;
@@ -2189,7 +2227,7 @@
     sq.cur = null; sq.picked = null;
     const gOpts = ['<option value="all">Tất cả cặp âm</option>'].concat(Data.pairs.map((g, i) => `<option value="${i}" ${String(sq.group) === String(i) ? 'selected' : ''}>${esc(g.sound)}</option>`)).join('');
     const groups = Data.pairs.map((g) => `<section class="card">
-        <div class="card-h"><h2>${esc(g.sound)}</h2></div>
+        <div class="card-h"><h2>${esc(g.sound)}</h2>${guideLink(g.id)}</div>
         <p class="hint">${esc(g.tip)}</p>
         <div class="pairs">${g.pairs.map((p) => `<div class="pair">
           <div class="pair-w"><b>${esc(p[0])}</b><span class="ipa">/${esc(p[1])}/</span><button class="icon-btn sm" data-say="${esc(p[0])}" aria-label="Nghe ${esc(p[0])}">🔊</button></div>
@@ -2199,6 +2237,7 @@
     view.innerHTML = `
       <a class="back" href="#listen">‹ Trang Nghe</a>
       <section class="page-h"><h1>Phát âm</h1><p class="muted">Luyện phân biệt các cặp âm dễ nhầm với người Việt. Phiên âm theo IPA Anh–Mỹ. Giọng đọc do trình duyệt tạo ra, nên hãy nghe thêm nguồn khác nếu thấy khó phân biệt.</p></section>
+      <section class="card row between wrap"><div><h2>Chẩn đoán và kế hoạch luyện</h2><p class="muted">Đo xem bạn yếu âm nào, rồi luyện 5 phút mỗi ngày đúng chỗ đó.</p></div><a class="btn primary" href="#pron">Mở</a></section>
       <section class="card">
         <div class="card-h"><h2>Luyện tai</h2><select id="pq-group" class="input" aria-label="Chọn cặp âm">${gOpts}</select></div>
         <div id="pquiz"></div>
@@ -2210,11 +2249,14 @@
       const b = e.target.closest('button[data-q]');
       if (!b || b.disabled) return;
       const q = b.dataset.q;
-      if (q === 'start' || q === 'next') { sqNext(); drawQuiz(); if (sq.cur) TTS.speak(sq.cur.p[sq.cur.target * 2]); return; }
+      if (q === 'start' || q === 'next') { sqNext(); drawQuiz(); if (sq.cur) sqSay(sq.cur.p[sq.cur.target * 2]); return; }
       if (q === 'pick' && sq.cur && sq.picked == null) {
         sq.picked = +b.dataset.i;
         sq.total += 1;
-        if (sq.picked === sq.cur.target) { sq.score += 1; sq.streak += 1; } else sq.streak = 0;
+        const right = sq.picked === sq.cur.target;
+        if (right) { sq.score += 1; sq.streak += 1; } else sq.streak = 0;
+        Pron.record(Pron.ensure(Store.get()), sq.cur.gid, 'perc', right); // theo dõi từng nhóm âm cho kế hoạch luyện
+        Store.logListen('pair', right);
         drawQuiz();
       }
     };
@@ -2228,7 +2270,7 @@
     let b = null;
     if ((e.key === '1' || e.key === '2') && sq.picked == null) b = $(`#pquiz [data-q="pick"][data-i="${+e.key - 1}"]`);
     else if ((e.key === ' ' || e.key === 'Enter') && sq.picked != null && tag !== 'button') b = $('#pquiz [data-q="next"]');
-    else if (e.key === 'p' || e.key === 'P') { TTS.speak(sq.cur.p[sq.cur.target * 2]); return; }
+    else if (e.key === 'p' || e.key === 'P') { sqSay(sq.cur.p[sq.cur.target * 2]); return; }
     if (b) { e.preventDefault(); b.click(); }
   });
 
@@ -2270,7 +2312,23 @@
       this.mr = new MediaRecorder(this.stream);
       this.chunks = [];
       this.mr.ondataavailable = (e) => { if (e.data && e.data.size) this.chunks.push(e.data); };
+      try { // thanh mức to khi đang thu
+        const AC = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AC();
+        this.an = this.ctx.createAnalyser();
+        this.an.fftSize = 1024;
+        this.buf = new Float32Array(this.an.fftSize);
+        this.ctx.createMediaStreamSource(this.stream).connect(this.an);
+      } catch (e) { this.an = null; }
       this.mr.start();
+    },
+    /** Mức to hiện tại, từ 0 đến 1 (0 nếu không đo được). */
+    level() {
+      if (!this.an || !this.an.getFloatTimeDomainData) return 0;
+      this.an.getFloatTimeDomainData(this.buf);
+      let s = 0;
+      for (let i = 0; i < this.buf.length; i++) s += this.buf[i] * this.buf[i];
+      return Math.min(1, Math.sqrt(s / this.buf.length) * 4);
     },
     stop() {
       return new Promise((resolve) => {
@@ -2283,18 +2341,33 @@
         this.mr.stop();
       });
     },
-    release() { if (this.stream) this.stream.getTracks().forEach((t) => t.stop()); this.stream = null; }
+    release() {
+      if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
+      if (this.ctx) { try { this.ctx.close(); } catch (e) { /* bỏ qua */ } }
+      this.ctx = null; this.an = null;
+    }
   };
   const Recog = {
     C: window.SpeechRecognition || window.webkitSpeechRecognition,
-    r: null, text: '',
-    start() {
+    r: null, text: '', results: [],
+    /** opts.alts: số phương án mỗi lần nhận dạng (kèm độ tin cậy) để đánh giá kỹ hơn. results: mỗi lần nhận dạng xong là một mảng [{ t, c }]. */
+    start(opts = {}) {
       if (!this.C) return;
       try {
         const r = new this.C();
         r.lang = 'en-US'; r.interimResults = true; r.continuous = true;
-        this.text = '';
-        r.onresult = (e) => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' '; this.text = t.trim(); };
+        r.maxAlternatives = opts.alts || 1;
+        this.text = ''; this.results = [];
+        r.onresult = (e) => {
+          let t = '';
+          const res = [];
+          for (let i = 0; i < e.results.length; i++) {
+            t += e.results[i][0].transcript + ' ';
+            if (e.results[i].isFinal) { const alts = []; for (let k = 0; k < e.results[i].length; k++) alts.push({ t: e.results[i][k].transcript, c: e.results[i][k].confidence || 0 }); res.push(alts); }
+          }
+          this.text = t.trim(); this.results = res;
+        };
         r.onerror = () => {};
         r.start();
         this.r = r;
@@ -3001,6 +3074,7 @@
   const App = window.App = {
     $, $$, esc, view, toast, routes, NAV_OF, goBack, shuffle, sampleN, ipaHTML, emojiHTML, lvBadge, mvBadge, hubTile, openSheet,
     topicOf, topicName, liveTopics, topicStats, snapshot, greeting, exportBackup, startSession, startListen, isHard, closeSheet,
+    Rec, Recog, scoreSpeech, micCheck, pronLog, answerFx, wordsOf,
     unitDone, unitState, startTopicSession, currentRoute: () => currentRoute, rerender: () => route(), checkBadges,
     slots: { today: [] }, clicks: [], hubs: { more: [], practice: [] }
   };

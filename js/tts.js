@@ -40,18 +40,20 @@ const TTS = (() => {
   const accentNames = () => accentPool().map((v) => REGIONS[regionOf(v)] || regionOf(v));
   /** Mã băm nhỏ của một chuỗi: cùng một câu luôn ra cùng một số, nên bấm nghe lại vẫn là giọng cũ. */
   function hash(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
-  function mixVoice(text) { const p = accentPool(); return p.length ? p[hash(String(text)) % p.length] : null; }
+  /** seed (tùy chọn): cùng một từ nhưng seed khác thì có thể ra giọng khác (luyện nghe nhiều người nói); cùng seed thì cùng giọng. */
+  function mixVoice(text, seed) { const p = accentPool(); return p.length ? p[hash(String(text) + (seed == null ? '' : '#' + seed)) % p.length] : null; }
 
   function cancel() { if (ok) speechSynthesis.cancel(); }
 
   /** Đọc một đoạn; Promise resolve(true) khi đọc xong, resolve(false) nếu bị ngắt/không hỗ trợ.
-   *  opts.mix: ở bài luyện nghe, khi người học bật "nhiều giọng" thì mỗi câu một giọng vùng khác nhau (cố định theo nội dung câu). */
+   *  opts.mix: ở bài luyện nghe, khi người học bật "nhiều giọng" thì mỗi câu một giọng vùng khác nhau (cố định theo nội dung câu).
+   *  opts.mix === 'always' (bài luyện tai cặp âm) thì luôn đổi giọng, không cần bật trong Cài đặt; opts.seed để cùng một từ ra giọng khác ở lần nghe khác. */
   function speak(text, opts = {}) {
     if (!ok || !text) return Promise.resolve(false);
     cancel();
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(text);
-      const v = opts.voice || (opts.mix && Store.settings.listenMix ? mixVoice(text) : null) || pick();
+      const v = opts.voice || (opts.mix === 'always' || (opts.mix && Store.settings.listenMix) ? mixVoice(text, opts.seed) : null) || pick();
       if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
       u.rate = opts.rate || Store.settings.rate || 0.9;
       u.onend = () => resolve(true);
